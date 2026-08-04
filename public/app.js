@@ -16,6 +16,40 @@ const db = firebase.firestore();
 let schedules = [];
 let currentRole = null; // 'admin' or 'user'
 
+const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+// --- AUTOMATED 24-HOUR CLEANUP CHECKER ---
+function checkAndAutoResetSchedules(snapshot) {
+    const now = Date.now();
+    const batch = db.batch();
+    let hasResets = false;
+
+    snapshot.forEach((doc) => {
+        const data = doc.data();
+        
+        // If slot is confirmed and 24 hours have elapsed since assignment
+        if (data.status === 'Confirmed' && data.last_updated) {
+            if (now - data.last_updated >= TWENTY_FOUR_HOURS) {
+                const docRef = db.collection("schedules").doc(doc.id);
+                batch.update(docRef, {
+                    volunteer_names: '',
+                    status: 'Vacant',
+                    last_updated: null
+                });
+                hasResets = true;
+            }
+        }
+    });
+
+    if (hasResets) {
+        batch.commit().then(() => {
+            console.log("Automated 24-hour schedule cleanup completed.");
+        }).catch((error) => {
+            console.error("Error executing auto-cleanup:", error);
+        });
+    }
+}
+
 // --- INITIALIZE & FETCH FROM FIRESTORE ---
 function initDatabase() {
     db.collection("schedules").get().then((snapshot) => {
@@ -23,22 +57,22 @@ function initDatabase() {
             // Seed initial 14 default time slots if database is brand new/empty
             const defaultSlots = [
                 // Facility 1: Kingdom Hall Security
-                { id: 1, facility_id: 1, time_slot: '12:00am - 6:00am', volunteer_names: '', status: 'Vacant' },
-                { id: 2, facility_id: 1, time_slot: '6:00am - 9:00am', volunteer_names: '', status: 'Vacant' },
-                { id: 3, facility_id: 1, time_slot: '9:00am - 12:00pm', volunteer_names: '', status: 'Vacant' },
-                { id: 4, facility_id: 1, time_slot: '12:00pm - 3:00pm', volunteer_names: '', status: 'Vacant' },
-                { id: 5, facility_id: 1, time_slot: '3:00pm - 6:00pm', volunteer_names: '', status: 'Vacant' },
-                { id: 6, facility_id: 1, time_slot: '6:00pm - 9:00pm', volunteer_names: '', status: 'Vacant' },
-                { id: 7, facility_id: 1, time_slot: '9:00pm - 11:59pm', volunteer_names: '', status: 'Vacant' },
+                { id: 1, facility_id: 1, time_slot: '12:00am - 6:00am', volunteer_names: '', status: 'Vacant', last_updated: null },
+                { id: 2, facility_id: 1, time_slot: '6:00am - 9:00am', volunteer_names: '', status: 'Vacant', last_updated: null },
+                { id: 3, facility_id: 1, time_slot: '9:00am - 12:00pm', volunteer_names: '', status: 'Vacant', last_updated: null },
+                { id: 4, facility_id: 1, time_slot: '12:00pm - 3:00pm', volunteer_names: '', status: 'Vacant', last_updated: null },
+                { id: 5, facility_id: 1, time_slot: '3:00pm - 6:00pm', volunteer_names: '', status: 'Vacant', last_updated: null },
+                { id: 6, facility_id: 1, time_slot: '6:00pm - 9:00pm', volunteer_names: '', status: 'Vacant', last_updated: null },
+                { id: 7, facility_id: 1, time_slot: '9:00pm - 11:59pm', volunteer_names: '', status: 'Vacant', last_updated: null },
 
                 // Facility 2: Bunk House Security
-                { id: 8, facility_id: 2, time_slot: '12:00am - 6:00am', volunteer_names: '', status: 'Vacant' },
-                { id: 9, facility_id: 2, time_slot: '6:00am - 9:00am', volunteer_names: '', status: 'Vacant' },
-                { id: 10, facility_id: 2, time_slot: '9:00am - 12:00pm', volunteer_names: '', status: 'Vacant' },
-                { id: 11, facility_id: 2, time_slot: '12:00pm - 3:00pm', volunteer_names: '', status: 'Vacant' },
-                { id: 12, facility_id: 2, time_slot: '3:00pm - 6:00pm', volunteer_names: '', status: 'Vacant' },
-                { id: 13, facility_id: 2, time_slot: '6:00pm - 9:00pm', volunteer_names: '', status: 'Vacant' },
-                { id: 14, facility_id: 2, time_slot: '9:00pm - 11:59pm', volunteer_names: '', status: 'Vacant' }
+                { id: 8, facility_id: 2, time_slot: '12:00am - 6:00am', volunteer_names: '', status: 'Vacant', last_updated: null },
+                { id: 9, facility_id: 2, time_slot: '6:00am - 9:00am', volunteer_names: '', status: 'Vacant', last_updated: null },
+                { id: 10, facility_id: 2, time_slot: '9:00am - 12:00pm', volunteer_names: '', status: 'Vacant', last_updated: null },
+                { id: 11, facility_id: 2, time_slot: '12:00pm - 3:00pm', volunteer_names: '', status: 'Vacant', last_updated: null },
+                { id: 12, facility_id: 2, time_slot: '3:00pm - 6:00pm', volunteer_names: '', status: 'Vacant', last_updated: null },
+                { id: 13, facility_id: 2, time_slot: '6:00pm - 9:00pm', volunteer_names: '', status: 'Vacant', last_updated: null },
+                { id: 14, facility_id: 2, time_slot: '9:00pm - 11:59pm', volunteer_names: '', status: 'Vacant', last_updated: null }
             ];
 
             const batch = db.batch();
@@ -58,6 +92,9 @@ function initDatabase() {
 // Real-time listener so tables auto-update whenever data changes in Firebase
 function listenToFirestore() {
     db.collection("schedules").onSnapshot((snapshot) => {
+        // Perform 24-hour schedule expiration check on sync
+        checkAndAutoResetSchedules(snapshot);
+
         schedules = [];
         snapshot.forEach((doc) => {
             schedules.push(doc.data());
@@ -303,10 +340,11 @@ function submitVolunteerShift(event) {
         currentVolunteers.push(newVolunteerName);
         const updatedNames = currentVolunteers.join(', ');
         
-        // Update Firestore Cloud Database
+        // Update Firestore Cloud Database with timestamp
         db.collection("schedules").doc(slotId.toString()).update({
             volunteer_names: updatedNames,
-            status: 'Confirmed'
+            status: 'Confirmed',
+            last_updated: Date.now()
         }).then(() => {
             alert("Success! Your name has been added to the schedule shift.");
             closeVolunteerFormModal();
@@ -367,7 +405,8 @@ function handleAdminFormSubmit(event) {
         facility_id: facility_id,
         time_slot: time_slot,
         volunteer_names: volunteer_names,
-        status: status
+        status: status,
+        last_updated: status === 'Confirmed' ? Date.now() : null
     };
 
     db.collection("schedules").doc(slotId.toString()).set(slotData).then(() => {
@@ -382,7 +421,8 @@ function deleteRecord(id) {
     if (confirm("Are you sure you want to clear this volunteer assignment and set the slot back to Vacant?")) {
         db.collection("schedules").doc(id.toString()).update({
             volunteer_names: '',
-            status: 'Vacant'
+            status: 'Vacant',
+            last_updated: null
         }).then(() => {
             // Updated successfully in real-time
         }).catch((error) => {
@@ -404,4 +444,4 @@ function permanentlyDeleteSlot(id) {
 window.onclick = function(event) {
     if (event.target === document.getElementById('volunteerFormModal')) closeVolunteerFormModal();
     if (event.target === document.getElementById('adminCrudModal')) closeAdminModal();
-}
+};
