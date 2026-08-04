@@ -18,7 +18,7 @@ let currentRole = null; // 'admin' or 'user'
 
 const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
-// --- AUTOMATED 24-HOUR CLEANUP CHECKER ---
+// --- AUTOMATED 24-HOUR CLEANUP CHECKER (OPTIONAL BACKGROUND BACKUP) ---
 function checkAndAutoResetSchedules(snapshot) {
     const now = Date.now();
     const batch = db.batch();
@@ -27,7 +27,6 @@ function checkAndAutoResetSchedules(snapshot) {
     snapshot.forEach((doc) => {
         const data = doc.data();
         
-        // If slot is confirmed and 24 hours have elapsed since assignment
         if (data.status === 'Confirmed' && data.last_updated) {
             if (now - data.last_updated >= TWENTY_FOUR_HOURS) {
                 const docRef = db.collection("schedules").doc(doc.id);
@@ -54,7 +53,7 @@ function checkAndAutoResetSchedules(snapshot) {
 function initDatabase() {
     db.collection("schedules").get().then((snapshot) => {
         if (snapshot.empty) {
-            // Seed initial 14 default time slots if database is brand new/empty
+            // Seed initial default time slots if database is empty
             const defaultSlots = [
                 // Facility 1: Kingdom Hall Security
                 { id: 1, facility_id: 1, time_slot: '12:00am - 6:00am', volunteer_names: '', status: 'Vacant', last_updated: null },
@@ -92,14 +91,12 @@ function initDatabase() {
 // Real-time listener so tables auto-update whenever data changes in Firebase
 function listenToFirestore() {
     db.collection("schedules").onSnapshot((snapshot) => {
-        // Perform 24-hour schedule expiration check on sync
         checkAndAutoResetSchedules(snapshot);
 
         schedules = [];
         snapshot.forEach((doc) => {
             schedules.push(doc.data());
         });
-        // Sort by ID to keep order clean
         schedules.sort((a, b) => a.id - b.id);
         renderTables();
     });
@@ -181,6 +178,37 @@ function renderTables() {
         } else {
             bunkBody.appendChild(row);
         }
+    });
+}
+
+// --- MANUAL RESET ALL SCHEDULES (ADMIN ONLY) ---
+function resetAllSchedules() {
+    if (currentRole !== 'admin') {
+        alert("Access Denied: Only administrators can perform a full schedule reset.");
+        return;
+    }
+
+    const confirmReset = confirm("Are you sure you want to RESET ALL SCHEDULES?\n\nThis will clear all volunteer names and set every slot back to Vacant.");
+    
+    if (!confirmReset) return;
+
+    db.collection("schedules").get().then((snapshot) => {
+        const batch = db.batch();
+
+        snapshot.forEach((doc) => {
+            const docRef = db.collection("schedules").doc(doc.id);
+            batch.update(docRef, {
+                volunteer_names: '',
+                status: 'Vacant',
+                last_updated: null
+            });
+        });
+
+        return batch.commit();
+    }).then(() => {
+        alert("All schedules have been successfully reset to Vacant!");
+    }).catch((error) => {
+        alert("Error resetting schedule database: " + error.message);
     });
 }
 
@@ -339,8 +367,7 @@ function submitVolunteerShift(event) {
 
         currentVolunteers.push(newVolunteerName);
         const updatedNames = currentVolunteers.join(', ');
-        
-        // Update Firestore Cloud Database with timestamp
+
         db.collection("schedules").doc(slotId.toString()).update({
             volunteer_names: updatedNames,
             status: 'Confirmed',
@@ -416,31 +443,18 @@ function handleAdminFormSubmit(event) {
     });
 }
 
-// Resets volunteer assignments without deleting the time slot structure from the table
 function deleteRecord(id) {
     if (confirm("Are you sure you want to clear this volunteer assignment and set the slot back to Vacant?")) {
         db.collection("schedules").doc(id.toString()).update({
             volunteer_names: '',
             status: 'Vacant',
             last_updated: null
-        }).then(() => {
-            // Updated successfully in real-time
         }).catch((error) => {
             alert("Error clearing record: " + error.message);
         });
     }
 }
 
-// Permanent removal helper in case an admin truly wants to delete a custom time slot
-function permanentlyDeleteSlot(id) {
-    if (confirm("WARNING: Are you sure you want to PERMANENTLY delete this entire time slot from the database?")) {
-        db.collection("schedules").doc(id.toString()).delete().catch((error) => {
-            alert("Error deleting time slot: " + error.message);
-        });
-    }
-}
-
-// Close modals on outside click
 window.onclick = function(event) {
     if (event.target === document.getElementById('volunteerFormModal')) closeVolunteerFormModal();
     if (event.target === document.getElementById('adminCrudModal')) closeAdminModal();
