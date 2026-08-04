@@ -4,19 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <!-- ANTI-CACHE HEADERS: Prevents storing login page in browser back-button cache -->
+    <!-- ANTI-CACHE HEADERS -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
 
-    <title>JW Security - Log In</title>
+    <title>JW Security - Secure Sign In</title>
 
-    <!-- INSTANT SESSION GUARD: Instantly jumps to dashboard if user is already logged in -->
+    <!-- INSTANT SESSION GUARD -->
     <script>
         if (sessionStorage.getItem('userRole')) {
             window.location.replace("dashboard.html");
         }
     </script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -27,25 +32,25 @@
 </head>
 <body class="login-body">
 
-    <!-- CREDENTIAL LOGIN CARD -->
+    <!-- ENTERPRISE LOGIN CARD -->
     <div class="login-container">
         <div class="login-card">
             <div class="login-header">
                 <img src="JW_Logo.jpg" alt="JW Logo" class="login-logo">
                 <h1>Security Portal</h1>
-                <p>Please enter your credentials to log in</p>
+                <p>Authenticate to access operations network</p>
             </div>
             <form id="loginForm" onsubmit="handleLogin(event)">
                 <div class="form-group text-left">
-                    <label for="usernameInput">Username</label>
-                    <input type="text" id="usernameInput" placeholder="Enter username" required autocomplete="username">
+                    <label for="usernameInput">Username ID</label>
+                    <input type="text" id="usernameInput" placeholder="Enter operator ID" required autocomplete="username">
                 </div>
                 <div class="form-group text-left">
-                    <label for="passwordInput">Password</label>
-                    <input type="password" id="passwordInput" placeholder="Enter password" required autocomplete="current-password">
+                    <label for="passwordInput">Secure Password</label>
+                    <input type="password" id="passwordInput" placeholder="••••••••" required autocomplete="current-password">
                 </div>
                 <div id="loginError" class="login-error-msg"></div>
-                <button type="submit" class="btn btn-primary btn-block">Log In</button>
+                <button type="submit" class="btn btn-primary btn-block">Authenticate Session</button>
             </form>
         </div>
     </div>
