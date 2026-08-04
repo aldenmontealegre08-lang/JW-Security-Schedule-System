@@ -49,8 +49,8 @@
         <!-- PAGE HEADER & ENTERPRISE ACTIONS -->
         <section class="page-header">
             <div>
-                <h1>Security Shifting Operations</h1>
-                <p>Live Master Schedule & Resource Allocation</p>
+                <h1>Security Shifting Schedule</h1>
+                <p>Live Schedule Dashboard</p>
             </div>
             <div class="header-actions">
                 <button class="btn btn-secondary admin-only" onclick="printDailySchedule()">
@@ -66,7 +66,7 @@
                 </button>
 
                 <button class="btn btn-success user-only" onclick="openVolunteerFormModal()">
-                    <i class="fa-solid fa-calendar-plus"></i> Submit Shift
+                    <i class="fa-solid fa-calendar-plus"></i> Apply for Shift
                 </button>
 
                 <button class="btn btn-primary admin-only" onclick="openAdminModal()">
@@ -87,7 +87,7 @@
                         <thead>
                             <tr>
                                 <th>Time Slot</th>
-                                <th>Assigned Personnel</th>
+                                <th>Voluteer/s</th>
                                 <th>Status</th>
                                 <th class="admin-only text-right">Actions</th>
                             </tr>
@@ -107,7 +107,7 @@
                         <thead>
                             <tr>
                                 <th>Time Slot</th>
-                                <th>Assigned Personnel</th>
+                                <th>Voluteer/s</th>
                                 <th>Status</th>
                                 <th class="admin-only text-right">Actions</th>
                             </tr>
@@ -138,7 +138,7 @@
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="closeVolunteerFormModal()">Cancel</button>
-                    <button type="submit" class="btn btn-success">Confirm Registration</button>
+                    <button type="submit" class="btn btn-success">Submit Application</button>
                 </div>
             </form>
         </div>
