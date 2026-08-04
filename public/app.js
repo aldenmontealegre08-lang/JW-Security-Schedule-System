@@ -32,10 +32,7 @@ function escapeHTML(str) {
 function getStartTimeInMinutes(timeSlotStr) {
     if (!timeSlotStr) return 0;
     
-    // Extract the start time portion (e.g. "6:00am" from "6:00am - 9:00am")
     const startTimeRaw = timeSlotStr.split('-')[0].trim().toLowerCase();
-    
-    // Match hours, minutes, and am/pm modifier
     const match = startTimeRaw.match(/^(\d{1,2}):?(\d{2})?\s*(am|pm)$/);
     if (!match) return 0;
 
@@ -187,7 +184,6 @@ function checkAndAutoResetSchedules(snapshot) {
 // --- INITIALIZE & REALTIME LISTENERS ---
 function initDatabase() {
     db.collection("schedules").get().then((snapshot) => {
-        // If snapshot is empty, populate strictly standard sequential schedule for both facilities
         if (snapshot.empty) {
             seedDefaultDatabase();
         } else {
@@ -198,7 +194,6 @@ function initDatabase() {
 
 function seedDefaultDatabase() {
     const defaultSlots = [
-        // Facility 1: Kingdom Hall Security (12:00am to 11:59pm)
         { id: 1, facility_id: 1, time_slot: '12:00am - 6:00am', volunteer_names: '', status: 'Vacant', last_updated: null },
         { id: 2, facility_id: 1, time_slot: '6:00am - 9:00am', volunteer_names: '', status: 'Vacant', last_updated: null },
         { id: 3, facility_id: 1, time_slot: '9:00am - 12:00pm', volunteer_names: '', status: 'Vacant', last_updated: null },
@@ -207,7 +202,6 @@ function seedDefaultDatabase() {
         { id: 6, facility_id: 1, time_slot: '6:00pm - 9:00pm', volunteer_names: '', status: 'Vacant', last_updated: null },
         { id: 7, facility_id: 1, time_slot: '9:00pm - 11:59pm', volunteer_names: '', status: 'Vacant', last_updated: null },
 
-        // Facility 2: Bunk House Security (12:00am to 11:59pm)
         { id: 8, facility_id: 2, time_slot: '12:00am - 6:00am', volunteer_names: '', status: 'Vacant', last_updated: null },
         { id: 9, facility_id: 2, time_slot: '6:00am - 9:00am', volunteer_names: '', status: 'Vacant', last_updated: null },
         { id: 10, facility_id: 2, time_slot: '9:00am - 12:00pm', volunteer_names: '', status: 'Vacant', last_updated: null },
@@ -236,7 +230,6 @@ function listenToFirestore() {
             schedules.push(doc.data());
         });
 
-        // CHRONOLOGICAL TIME SORTING FIX
         schedules.sort((a, b) => {
             const timeA = getStartTimeInMinutes(a.time_slot);
             const timeB = getStartTimeInMinutes(b.time_slot);
@@ -342,7 +335,6 @@ function fetchHistoryForSelectedDate() {
         const data = doc.data();
         let records = data.records || [];
 
-        // Sort history chronologically as well
         records.sort((a, b) => getStartTimeInMinutes(a.time_slot) - getStartTimeInMinutes(b.time_slot));
 
         khBody.innerHTML = '';
@@ -526,10 +518,13 @@ function deleteRecord(id) {
     }
 }
 
+// --- FIXED MOBILE TOUCH-FRIENDLY WINDOW CLICK LISTENER ---
 window.onclick = function(event) {
-    if (event.target === document.getElementById('volunteerFormModal')) closeVolunteerFormModal();
-    if (event.target === document.getElementById('adminCrudModal')) closeAdminModal();
-    if (event.target === document.getElementById('historyModal')) closeHistoryModal();
+    if (event.target.classList.contains('modal')) {
+        if (event.target.id === 'volunteerFormModal') closeVolunteerFormModal();
+        if (event.target.id === 'adminCrudModal') closeAdminModal();
+        if (event.target.id === 'historyModal') closeHistoryModal();
+    }
 };
 
 window.handleLogin = handleLogin;
