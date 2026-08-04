@@ -14,7 +14,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 let schedules = [];
-let currentRole = sessionStorage.getItem('userRole'); // Persisted session role
+let currentRole = sessionStorage.getItem('userRole');
 const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
 
 // --- SECURITY HELPER: XSS SANITIZATION ---
@@ -26,6 +26,27 @@ function escapeHTML(str) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
+}
+
+// --- DYNAMIC TIME PARSER FOR ACCURATE CHRONOLOGICAL SORTING ---
+function getStartTimeInMinutes(timeSlotStr) {
+    if (!timeSlotStr) return 0;
+    
+    // Extract the start time portion (e.g. "6:00am" from "6:00am - 9:00am")
+    const startTimeRaw = timeSlotStr.split('-')[0].trim().toLowerCase();
+    
+    // Match hours, minutes, and am/pm modifier
+    const match = startTimeRaw.match(/^(\d{1,2}):?(\d{2})?\s*(am|pm)$/);
+    if (!match) return 0;
+
+    let hours = parseInt(match[1], 10);
+    const minutes = match[2] ? parseInt(match[2], 10) : 0;
+    const modifier = match[3];
+
+    if (modifier === 'pm' && hours < 12) hours += 12;
+    if (modifier === 'am' && hours === 12) hours = 0;
+
+    return hours * 60 + minutes;
 }
 
 // --- ROUTING & AUTHENTICATION GUARD ---
@@ -45,7 +66,6 @@ function evaluateAccessControl() {
             return false;
         }
 
-        // Apply Role styling & text
         document.body.classList.remove('role-admin', 'role-user');
         document.body.classList.add(`role-${currentRole}`);
         
@@ -60,22 +80,18 @@ function evaluateAccessControl() {
             }
         }
 
-        // Reveal body after successful verification
         document.body.style.display = 'block';
         return true;
     }
     return true;
 }
 
-// Check session on page DOM load
 document.addEventListener('DOMContentLoaded', () => {
     if (evaluateAccessControl() && document.getElementById('khTableBody')) {
         initDatabase();
     }
 });
 
-// --- BFCACHE BACK-BUTTON KILL SWITCH ---
-// Triggers if browser attempts to load page from back/forward memory cache
 window.addEventListener('pageshow', (event) => {
     if (event.persisted || (window.performance && window.performance.navigation && window.performance.navigation.type === 2)) {
         evaluateAccessControl();
@@ -104,7 +120,6 @@ function handleLogin(event) {
         return;
     }
 
-    // Save session and replace location (erases back-button history step)
     sessionStorage.setItem('userRole', currentRole);
     window.location.replace('dashboard.html');
 }
@@ -115,18 +130,15 @@ function handleLogout() {
     window.location.replace('index.html');
 }
 
-// --- PRINT SCHEDULE FEATURE ---
 function printDailySchedule() {
     window.print();
 }
 
-// --- GMT+8 HELPER FUNCTION ---
 function getGMT8DateString(dateObj = new Date()) {
     const options = { timeZone: 'Asia/Manila', year: 'numeric', month: '2-digit', day: '2-digit' };
-    return new Intl.DateTimeFormat('en-CA', options).format(dateObj); // "YYYY-MM-DD"
+    return new Intl.DateTimeFormat('en-CA', options).format(dateObj);
 }
 
-// --- SAVE / ARCHIVE TODAY'S LOG TO FIRESTORE ---
 function saveDailyLog() {
     const todayStr = getGMT8DateString();
     
@@ -147,7 +159,6 @@ function saveDailyLog() {
     }, { merge: true });
 }
 
-// --- AUTOMATED 24-HOUR CLEANUP CHECKER ---
 function checkAndAutoResetSchedules(snapshot) {
     const now = Date.now();
     const batch = db.batch();
@@ -169,49 +180,50 @@ function checkAndAutoResetSchedules(snapshot) {
     });
 
     if (hasResets) {
-        batch.commit().then(() => {
-            console.log("Automated 24-hour schedule cleanup completed.");
-        }).catch((error) => {
-            console.error("Error executing auto-cleanup:", error);
-        });
+        batch.commit().catch(console.error);
     }
 }
 
-// --- INITIALIZE & LISTEN TO FIRESTORE ---
+// --- INITIALIZE & REALTIME LISTENERS ---
 function initDatabase() {
     db.collection("schedules").get().then((snapshot) => {
+        // If snapshot is empty, populate strictly standard sequential schedule for both facilities
         if (snapshot.empty) {
-            const defaultSlots = [
-                // Facility 1: Kingdom Hall Security
-                { id: 1, facility_id: 1, time_slot: '12:00am - 6:00am', volunteer_names: '', status: 'Vacant', last_updated: null },
-                { id: 2, facility_id: 1, time_slot: '6:00am - 9:00am', volunteer_names: '', status: 'Vacant', last_updated: null },
-                { id: 3, facility_id: 1, time_slot: '9:00am - 12:00pm', volunteer_names: '', status: 'Vacant', last_updated: null },
-                { id: 4, facility_id: 1, time_slot: '12:00pm - 3:00pm', volunteer_names: '', status: 'Vacant', last_updated: null },
-                { id: 5, facility_id: 1, time_slot: '3:00pm - 6:00pm', volunteer_names: '', status: 'Vacant', last_updated: null },
-                { id: 6, facility_id: 1, time_slot: '6:00pm - 9:00pm', volunteer_names: '', status: 'Vacant', last_updated: null },
-                { id: 7, facility_id: 1, time_slot: '9:00pm - 11:59pm', volunteer_names: '', status: 'Vacant', last_updated: null },
-
-                // Facility 2: Bunk House Security
-                { id: 8, facility_id: 2, time_slot: '12:00am - 6:00am', volunteer_names: '', status: 'Vacant', last_updated: null },
-                { id: 9, facility_id: 2, time_slot: '6:00am - 9:00am', volunteer_names: '', status: 'Vacant', last_updated: null },
-                { id: 10, facility_id: 2, time_slot: '9:00am - 12:00pm', volunteer_names: '', status: 'Vacant', last_updated: null },
-                { id: 11, facility_id: 2, time_slot: '12:00pm - 3:00pm', volunteer_names: '', status: 'Vacant', last_updated: null },
-                { id: 12, facility_id: 2, time_slot: '3:00pm - 6:00pm', volunteer_names: '', status: 'Vacant', last_updated: null },
-                { id: 13, facility_id: 2, time_slot: '6:00pm - 9:00pm', volunteer_names: '', status: 'Vacant', last_updated: null },
-                { id: 14, facility_id: 2, time_slot: '9:00pm - 11:59pm', volunteer_names: '', status: 'Vacant', last_updated: null }
-            ];
-
-            const batch = db.batch();
-            defaultSlots.forEach(slot => {
-                const docRef = db.collection("schedules").doc(slot.id.toString());
-                batch.set(docRef, slot);
-            });
-            batch.commit().then(() => {
-                listenToFirestore();
-            });
+            seedDefaultDatabase();
         } else {
             listenToFirestore();
         }
+    });
+}
+
+function seedDefaultDatabase() {
+    const defaultSlots = [
+        // Facility 1: Kingdom Hall Security (12:00am to 11:59pm)
+        { id: 1, facility_id: 1, time_slot: '12:00am - 6:00am', volunteer_names: '', status: 'Vacant', last_updated: null },
+        { id: 2, facility_id: 1, time_slot: '6:00am - 9:00am', volunteer_names: '', status: 'Vacant', last_updated: null },
+        { id: 3, facility_id: 1, time_slot: '9:00am - 12:00pm', volunteer_names: '', status: 'Vacant', last_updated: null },
+        { id: 4, facility_id: 1, time_slot: '12:00pm - 3:00pm', volunteer_names: '', status: 'Vacant', last_updated: null },
+        { id: 5, facility_id: 1, time_slot: '3:00pm - 6:00pm', volunteer_names: '', status: 'Vacant', last_updated: null },
+        { id: 6, facility_id: 1, time_slot: '6:00pm - 9:00pm', volunteer_names: '', status: 'Vacant', last_updated: null },
+        { id: 7, facility_id: 1, time_slot: '9:00pm - 11:59pm', volunteer_names: '', status: 'Vacant', last_updated: null },
+
+        // Facility 2: Bunk House Security (12:00am to 11:59pm)
+        { id: 8, facility_id: 2, time_slot: '12:00am - 6:00am', volunteer_names: '', status: 'Vacant', last_updated: null },
+        { id: 9, facility_id: 2, time_slot: '6:00am - 9:00am', volunteer_names: '', status: 'Vacant', last_updated: null },
+        { id: 10, facility_id: 2, time_slot: '9:00am - 12:00pm', volunteer_names: '', status: 'Vacant', last_updated: null },
+        { id: 11, facility_id: 2, time_slot: '12:00pm - 3:00pm', volunteer_names: '', status: 'Vacant', last_updated: null },
+        { id: 12, facility_id: 2, time_slot: '3:00pm - 6:00pm', volunteer_names: '', status: 'Vacant', last_updated: null },
+        { id: 13, facility_id: 2, time_slot: '6:00pm - 9:00pm', volunteer_names: '', status: 'Vacant', last_updated: null },
+        { id: 14, facility_id: 2, time_slot: '9:00pm - 11:59pm', volunteer_names: '', status: 'Vacant', last_updated: null }
+    ];
+
+    const batch = db.batch();
+    defaultSlots.forEach(slot => {
+        const docRef = db.collection("schedules").doc(slot.id.toString());
+        batch.set(docRef, slot);
+    });
+    batch.commit().then(() => {
+        listenToFirestore();
     });
 }
 
@@ -223,14 +235,20 @@ function listenToFirestore() {
         snapshot.forEach((doc) => {
             schedules.push(doc.data());
         });
-        schedules.sort((a, b) => a.id - b.id);
-        renderTables();
 
+        // CHRONOLOGICAL TIME SORTING FIX
+        schedules.sort((a, b) => {
+            const timeA = getStartTimeInMinutes(a.time_slot);
+            const timeB = getStartTimeInMinutes(b.time_slot);
+            return timeA - timeB;
+        });
+
+        renderTables();
         saveDailyLog();
     });
 }
 
-// --- RENDER TABLES (XSS PROTECTED) ---
+// --- RENDER TABLES ---
 function renderTables() {
     const khBody = document.getElementById('khTableBody');
     const bunkBody = document.getElementById('bunkTableBody');
@@ -265,11 +283,11 @@ function renderTables() {
     });
 }
 
-// --- RESET & ARCHIVE SCHEDULES (ADMIN ONLY) ---
+// --- RESET ALL SCHEDULES AND RESTORE DEFAULT SEQUENTIAL SLOTS ---
 function resetAllSchedules() {
     if (currentRole !== 'admin') return;
 
-    const confirmReset = confirm("Are you sure you want to RESET ALL SCHEDULES?\n\nToday's log (GMT+8) will be archived to History before clearing the active table.");
+    const confirmReset = confirm("Are you sure you want to RESET ALL SCHEDULES?\n\nThis will restore both facilities to sequential order (12:00am - 11:59pm) and archive today's log.");
     if (!confirmReset) return;
 
     saveDailyLog().then(() => {
@@ -277,22 +295,18 @@ function resetAllSchedules() {
     }).then((snapshot) => {
         const batch = db.batch();
         snapshot.forEach((doc) => {
-            const docRef = db.collection("schedules").doc(doc.id);
-            batch.update(docRef, {
-                volunteer_names: '',
-                status: 'Vacant',
-                last_updated: null
-            });
+            batch.delete(doc.ref);
         });
         return batch.commit();
     }).then(() => {
-        alert("Today's shifts have been saved to History (GMT+8), and live schedules have been reset to Vacant!");
+        seedDefaultDatabase();
+        alert("Schedules have been reset and restored to proper sequential order!");
     }).catch((error) => {
-        alert("Error during history archiving and reset: " + error.message);
+        alert("Error during reset: " + error.message);
     });
 }
 
-// --- HISTORY CHECKLIST MODAL LOGIC ---
+// --- HISTORY LOGS ---
 function openHistoryModal() {
     if (currentRole !== 'admin') return;
 
@@ -326,7 +340,10 @@ function fetchHistoryForSelectedDate() {
         }
 
         const data = doc.data();
-        const records = data.records || [];
+        let records = data.records || [];
+
+        // Sort history chronologically as well
+        records.sort((a, b) => getStartTimeInMinutes(a.time_slot) - getStartTimeInMinutes(b.time_slot));
 
         khBody.innerHTML = '';
         bunkBody.innerHTML = '';
@@ -362,7 +379,7 @@ function fetchHistoryForSelectedDate() {
     });
 }
 
-// --- USER FORM SUBMISSION FEATURE ---
+// --- USER FORM SUBMISSION ---
 function openVolunteerFormModal() {
     const timeSlotSelect = document.getElementById('formTimeSlotSelect');
     if (!timeSlotSelect) return;
@@ -509,14 +526,12 @@ function deleteRecord(id) {
     }
 }
 
-// --- GLOBAL EVENT BINDINGS FOR MODALS ---
 window.onclick = function(event) {
     if (event.target === document.getElementById('volunteerFormModal')) closeVolunteerFormModal();
     if (event.target === document.getElementById('adminCrudModal')) closeAdminModal();
     if (event.target === document.getElementById('historyModal')) closeHistoryModal();
 };
 
-// Expose functions to global scope
 window.handleLogin = handleLogin;
 window.handleLogout = handleLogout;
 window.printDailySchedule = printDailySchedule;
