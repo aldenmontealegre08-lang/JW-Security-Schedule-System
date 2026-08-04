@@ -129,32 +129,3 @@ form { padding: 1.25rem; }
 /* Role Control Display Helpers */
 body.role-user .admin-only { display: none !important; }
 body.role-admin .user-only { display: none !important; }
-/* ==========================================
-   LOGGED OUT STATE (Hide Dashboard)
-   ========================================== */
-
-/* 1. Hide the header/navbar and main dashboard content when logged out */
-/* Change line 141 from a dot to a comma (or closing selector block): */
-body.logged-out header,
-body.logged-out nav,
-body.logged-out .navbar,
-body.logged-out main,
-body.logged-out .container,          /* <--- Replace dot '.' with a comma ',' */
-body.logged-out .dashboard-container {
-    display: none !important;
-}
-
-/* 2. Turn the login modal into a full-screen background */
-body.logged-out #loginModal,
-body.logged-out .modal {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    background-color: #0f172a !important; /* Dark solid background matching your theme */
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    z-index: 99999 !important;
-}
