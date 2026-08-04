@@ -16,9 +16,37 @@ const db = firebase.firestore();
 let schedules = [];
 let currentRole = null; // 'admin' or 'user'
 
-const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
 
-// --- AUTOMATED 24-HOUR CLEANUP CHECKER (OPTIONAL BACKGROUND BACKUP) ---
+// --- GMT+8 HELPER FUNCTION ---
+// Formats current or target date strictly into GMT+8 ISO Date string (YYYY-MM-DD)
+function getGMT8DateString(dateObj = new Date()) {
+    const options = { timeZone: 'Asia/Manila', year: 'numeric', month: '2-digit', day: '2-digit' };
+    return new Intl.DateTimeFormat('en-CA', options).format(dateObj); // Returns "YYYY-MM-DD"
+}
+
+// --- DYNAMICALLY SAVE / ARCHIVE TODAY'S LOG TO FIRESTORE ---
+function saveDailyLog() {
+    const todayStr = getGMT8DateString(); // GMT+8 Date identifier
+    
+    const logData = schedules.map(slot => ({
+        id: slot.id,
+        facility_id: slot.facility_id,
+        facility_name: slot.facility_id === 1 ? 'Kingdom Hall Security' : 'Bunk House Security',
+        time_slot: slot.time_slot,
+        volunteer_names: slot.volunteer_names,
+        status: slot.status
+    }));
+
+    return db.collection("daily_logs").doc(todayStr).set({
+        date: todayStr,
+        timezone: "GMT+8",
+        last_updated: Date.now(),
+        records: logData
+    }, { merge: true });
+}
+
+// --- AUTOMATED 24-HOUR CLEANUP CHECKER ---
 function checkAndAutoResetSchedules(snapshot) {
     const now = Date.now();
     const batch = db.batch();
@@ -26,7 +54,6 @@ function checkAndAutoResetSchedules(snapshot) {
 
     snapshot.forEach((doc) => {
         const data = doc.data();
-        
         if (data.status === 'Confirmed' && data.last_updated) {
             if (now - data.last_updated >= TWENTY_FOUR_HOURS) {
                 const docRef = db.collection("schedules").doc(doc.id);
@@ -53,7 +80,6 @@ function checkAndAutoResetSchedules(snapshot) {
 function initDatabase() {
     db.collection("schedules").get().then((snapshot) => {
         if (snapshot.empty) {
-            // Seed initial default time slots if database is empty
             const defaultSlots = [
                 // Facility 1: Kingdom Hall Security
                 { id: 1, facility_id: 1, time_slot: '12:00am - 6:00am', volunteer_names: '', status: 'Vacant', last_updated: null },
@@ -99,10 +125,12 @@ function listenToFirestore() {
         });
         schedules.sort((a, b) => a.id - b.id);
         renderTables();
+
+        // Keep today's history log dynamically in sync
+        saveDailyLog();
     });
 }
 
-// Run database setup on load
 window.onload = function() {
     initDatabase();
 };
@@ -181,20 +209,22 @@ function renderTables() {
     });
 }
 
-// --- MANUAL RESET ALL SCHEDULES (ADMIN ONLY) ---
+// --- MANUAL RESET & ARCHIVE SCHEDULES (ADMIN ONLY) ---
 function resetAllSchedules() {
     if (currentRole !== 'admin') {
         alert("Access Denied: Only administrators can perform a full schedule reset.");
         return;
     }
 
-    const confirmReset = confirm("Are you sure you want to RESET ALL SCHEDULES?\n\nThis will clear all volunteer names and set every slot back to Vacant.");
-    
+    const confirmReset = confirm("Are you sure you want to RESET ALL SCHEDULES?\n\nToday's log (GMT+8) will be archived to History before clearing the active table.");
     if (!confirmReset) return;
 
-    db.collection("schedules").get().then((snapshot) => {
+    // 1. Archive current day to history logs first
+    saveDailyLog().then(() => {
+        // 2. Fetch and reset live schedules
+        return db.collection("schedules").get();
+    }).then((snapshot) => {
         const batch = db.batch();
-
         snapshot.forEach((doc) => {
             const docRef = db.collection("schedules").doc(doc.id);
             batch.update(docRef, {
@@ -203,115 +233,83 @@ function resetAllSchedules() {
                 last_updated: null
             });
         });
-
         return batch.commit();
     }).then(() => {
-        alert("All schedules have been successfully reset to Vacant!");
+        alert("Today's shifts have been saved to History (GMT+8), and live schedules have been reset to Vacant!");
     }).catch((error) => {
-        alert("Error resetting schedule database: " + error.message);
+        alert("Error during history archiving and reset: " + error.message);
     });
 }
 
-// --- PRINT SCHEDULE FEATURE (ADMIN ONLY) ---
-function printDailySchedule() {
+// --- HISTORY CHECKLIST MODAL LOGIC (ADMIN ONLY) ---
+function openHistoryModal() {
     if (currentRole !== 'admin') {
-        alert("Access Denied: Only administrators are authorized to print the schedule.");
+        alert("Access Denied: Only administrators can view shift history logs.");
         return;
     }
 
-    const printWindow = window.open('', '_blank', 'width=800,height=600');
-    
-    const kingdomHallSlots = schedules.filter(s => s.facility_id === 1);
-    const bunkHouseSlots = schedules.filter(s => s.facility_id === 2);
+    const datePicker = document.getElementById('historyDateSelect');
+    const todayStr = getGMT8DateString();
+    datePicker.value = todayStr;
 
-    let htmlContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>JW Security Roster - Master Schedule</title>
-            <style>
-                body { font-family: Arial, sans-serif; color: #1e293b; padding: 20px; }
-                h2 { border-bottom: 2px solid #0f172a; padding-bottom: 8px; margin-top: 30px; color: #0f172a; }
-                h1 { margin-bottom: 5px; color: #0f172a; }
-                p.date { color: #64748b; margin-top: 0; font-size: 14px; }
-                table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 25px; }
-                th, td { border: 1px solid #cbd5e1; padding: 10px 12px; text-align: left; font-size: 14px; }
-                th { background-color: #f1f5f9; color: #334155; }
-                .unassigned { color: #94a3b8; font-style: italic; }
-                @media print {
-                    button { display: none; }
-                }
-            </style>
-        </head>
-        <body>
-            <h1>JW Security Roster & Shift Sign-Up</h1>
-            <p class="date">Master Schedule Report — Generated on ${new Date().toLocaleDateString()}</p>
-            
-            <h2>Kingdom Hall Security</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 35%;">Time Slot</th>
-                        <th style="width: 50%;">Volunteer/s</th>
-                        <th style="width: 15%;">Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-    `;
+    fetchHistoryForSelectedDate();
+    document.getElementById('historyModal').style.display = 'flex';
+}
 
-    kingdomHallSlots.forEach(slot => {
-        const volunteers = slot.volunteer_names ? slot.volunteer_names : '<span class="unassigned">Unassigned Slot</span>';
-        htmlContent += `
-            <tr>
-                <td><strong>${slot.time_slot}</strong></td>
-                <td>${volunteers}</td>
-                <td>${slot.status}</td>
-            </tr>
-        `;
+function closeHistoryModal() {
+    document.getElementById('historyModal').style.display = 'none';
+}
+
+function fetchHistoryForSelectedDate() {
+    const selectedDate = document.getElementById('historyDateSelect').value;
+    const khBody = document.getElementById('historyKhBody');
+    const bunkBody = document.getElementById('historyBunkBody');
+
+    if (!selectedDate) return;
+
+    khBody.innerHTML = '<tr><td colspan="3" style="text-align: center;">Loading history...</td></tr>';
+    bunkBody.innerHTML = '<tr><td colspan="3" style="text-align: center;">Loading history...</td></tr>';
+
+    db.collection("daily_logs").doc(selectedDate).get().then((doc) => {
+        if (!doc.exists) {
+            khBody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #94a3b8;">No history recorded for this date.</td></tr>';
+            bunkBody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #94a3b8;">No history recorded for this date.</td></tr>';
+            return;
+        }
+
+        const data = doc.data();
+        const records = data.records || [];
+
+        khBody.innerHTML = '';
+        bunkBody.innerHTML = '';
+
+        if (records.length === 0) {
+            khBody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #94a3b8;">No shift records found.</td></tr>';
+            bunkBody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #94a3b8;">No shift records found.</td></tr>';
+            return;
+        }
+
+        records.forEach(item => {
+            const row = document.createElement('tr');
+            const badgeClass = item.status === 'Confirmed' ? 'confirmed' : 'vacant';
+            const volunteerDisplay = item.volunteer_names ? item.volunteer_names : '<span style="color: #94a3b8; font-style: italic;">Unassigned Slot</span>';
+
+            row.innerHTML = `
+                <td><strong>${item.time_slot}</strong></td>
+                <td>${volunteerDisplay}</td>
+                <td><span class="badge ${badgeClass}">${item.status}</span></td>
+            `;
+
+            if (item.facility_id === 1) {
+                khBody.appendChild(row);
+            } else {
+                bunkBody.appendChild(row);
+            }
+        });
+
+    }).catch((error) => {
+        alert("Error fetching history log: " + error.message);
     });
-
-    htmlContent += `
-                </tbody>
-            </table>
-
-            <h2>Bunk House Security</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 35%;">Time Slot</th>
-                        <th style="width: 50%;">Volunteer/s</th>
-                        <th style="width: 15%;">Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-    `;
-
-    bunkHouseSlots.forEach(slot => {
-        const volunteers = slot.volunteer_names ? slot.volunteer_names : '<span class="unassigned">Unassigned Slot</span>';
-        htmlContent += `
-            <tr>
-                <td><strong>${slot.time_slot}</strong></td>
-                <td>${volunteers}</td>
-                <td>${slot.status}</td>
-            </tr>
-        `;
-    });
-
-    htmlContent += `
-                </tbody>
-            </table>
-            
-            <script>
-                window.onload = function() {
-                    window.print();
-                }
-            </script>
-        </body>
-        </html>
-    `;
-
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
 }
 
 // --- USER FORM SUBMISSION FEATURE ---
@@ -458,4 +456,5 @@ function deleteRecord(id) {
 window.onclick = function(event) {
     if (event.target === document.getElementById('volunteerFormModal')) closeVolunteerFormModal();
     if (event.target === document.getElementById('adminCrudModal')) closeAdminModal();
+    if (event.target === document.getElementById('historyModal')) closeHistoryModal();
 };
