@@ -244,8 +244,104 @@ function listenToFirestore() {
         });
 
         renderTables();
+        updateHomeStatistics();
         saveDailyLog();
     });
+}
+
+// --- TAB SWITCHING & SHIFT SUBMISSION LOGIC ---
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+    const targetPane = document.getElementById(tabId);
+    const targetBtn = document.getElementById('btn-' + tabId);
+
+    if (targetPane) targetPane.classList.add('active');
+    if (targetBtn) targetBtn.classList.add('active');
+
+    if (tabId === 'apply') {
+        populateShiftTabDropdown();
+    }
+}
+
+function populateShiftTabDropdown() {
+    const timeSlotSelect = document.getElementById('formTimeSlotSelectTab');
+    if (!timeSlotSelect) return;
+    
+    timeSlotSelect.innerHTML = '';
+
+    if (schedules.length === 0) {
+        timeSlotSelect.innerHTML = '<option disabled selected>No time slots available</option>';
+    } else {
+        schedules.forEach(slot => {
+            const facilityName = slot.facility_id === 1 ? 'Kingdom Hall' : 'Bunk House';
+            const opt = document.createElement('option');
+            opt.value = slot.id;
+            opt.textContent = `${facilityName} — ${slot.time_slot} (${slot.status})`;
+            timeSlotSelect.appendChild(opt);
+        });
+    }
+}
+
+function submitVolunteerShiftTab(event) {
+    event.preventDefault();
+    const newVolunteerName = document.getElementById('volunteerFullNameTab').value.trim();
+    const slotId = parseInt(document.getElementById('formTimeSlotSelectTab').value);
+
+    if (!newVolunteerName) {
+        alert("Please enter your name.");
+        return;
+    }
+
+    const targetSlot = schedules.find(s => s.id === slotId);
+    if (targetSlot) {
+        let currentVolunteers = targetSlot.volunteer_names 
+            ? targetSlot.volunteer_names.split(',').map(n => n.trim()).filter(n => n.length > 0)
+            : [];
+
+        if (currentVolunteers.length >= 4) {
+            alert("This time slot has already reached the maximum limit of 4 volunteers.");
+            return;
+        }
+
+        if (currentVolunteers.some(name => name.toLowerCase() === newVolunteerName.toLowerCase())) {
+            alert("This name is already registered for this time slot.");
+            return;
+        }
+
+        currentVolunteers.push(newVolunteerName);
+        const updatedNames = currentVolunteers.join(', ');
+
+        db.collection("schedules").doc(slotId.toString()).update({
+            volunteer_names: updatedNames,
+            status: 'Confirmed',
+            last_updated: Date.now()
+        }).then(() => {
+            alert("Success! Your name has been added to the schedule shift.");
+            document.getElementById('shiftSubmissionFormTab').reset();
+            switchTab('schedule');
+        }).catch((error) => {
+            alert("Error updating schedule: " + error.message);
+        });
+    }
+}
+
+// --- UPDATE HOME COUNTERS STATS ---
+function updateHomeStatistics() {
+    const totalSlotsElem = document.getElementById('statTotalSlots');
+    const confirmedSlotsElem = document.getElementById('statConfirmedSlots');
+    const vacantSlotsElem = document.getElementById('statVacantSlots');
+
+    if (!totalSlotsElem) return;
+
+    const total = schedules.length;
+    const confirmed = schedules.filter(s => s.status === 'Confirmed').length;
+    const vacant = schedules.filter(s => s.status === 'Vacant').length;
+
+    totalSlotsElem.textContent = total;
+    confirmedSlotsElem.textContent = confirmed;
+    vacantSlotsElem.textContent = vacant;
 }
 
 // --- RENDER TABLES ---
@@ -379,75 +475,6 @@ function fetchHistoryForSelectedDate() {
     });
 }
 
-// --- USER FORM SUBMISSION ---
-function openVolunteerFormModal() {
-    const timeSlotSelect = document.getElementById('formTimeSlotSelect');
-    if (!timeSlotSelect) return;
-    
-    timeSlotSelect.innerHTML = '';
-
-    if (schedules.length === 0) {
-        timeSlotSelect.innerHTML = '<option disabled selected>No time slots available</option>';
-    } else {
-        schedules.forEach(slot => {
-            const facilityName = slot.facility_id === 1 ? 'Kingdom Hall' : 'Bunk House';
-            const opt = document.createElement('option');
-            opt.value = slot.id;
-            opt.textContent = `${facilityName} — ${slot.time_slot}`;
-            timeSlotSelect.appendChild(opt);
-        });
-    }
-
-    document.getElementById('shiftSubmissionForm').reset();
-    document.getElementById('volunteerFormModal').style.display = 'flex';
-}
-
-function closeVolunteerFormModal() {
-    document.getElementById('volunteerFormModal').style.display = 'none';
-}
-
-function submitVolunteerShift(event) {
-    event.preventDefault();
-    const newVolunteerName = document.getElementById('volunteerFullName').value.trim();
-    const slotId = parseInt(document.getElementById('formTimeSlotSelect').value);
-
-    if (!newVolunteerName) {
-        alert("Please enter your name.");
-        return;
-    }
-
-    const targetSlot = schedules.find(s => s.id === slotId);
-    if (targetSlot) {
-        let currentVolunteers = targetSlot.volunteer_names 
-            ? targetSlot.volunteer_names.split(',').map(n => n.trim()).filter(n => n.length > 0)
-            : [];
-
-        if (currentVolunteers.length >= 4) {
-            alert("This time slot has already reached the maximum limit of 4 volunteers.");
-            return;
-        }
-
-        if (currentVolunteers.some(name => name.toLowerCase() === newVolunteerName.toLowerCase())) {
-            alert("This name is already registered for this time slot.");
-            return;
-        }
-
-        currentVolunteers.push(newVolunteerName);
-        const updatedNames = currentVolunteers.join(', ');
-
-        db.collection("schedules").doc(slotId.toString()).update({
-            volunteer_names: updatedNames,
-            status: 'Confirmed',
-            last_updated: Date.now()
-        }).then(() => {
-            alert("Success! Your name has been added to the schedule shift.");
-            closeVolunteerFormModal();
-        }).catch((error) => {
-            alert("Error updating schedule: " + error.message);
-        });
-    }
-}
-
 // --- ADMIN CRUD OPERATIONS ---
 function openAdminModal() {
     if (currentRole !== 'admin') return;
@@ -527,7 +554,6 @@ function deleteRecord(id) {
 }
 
 window.onclick = function(event) {
-    if (event.target === document.getElementById('volunteerFormModal')) closeVolunteerFormModal();
     if (event.target === document.getElementById('adminCrudModal')) closeAdminModal();
     if (event.target === document.getElementById('historyModal')) closeHistoryModal();
 };
@@ -535,9 +561,8 @@ window.onclick = function(event) {
 window.handleLogin = handleLogin;
 window.handleLogout = handleLogout;
 window.printDailySchedule = printDailySchedule;
-window.openVolunteerFormModal = openVolunteerFormModal;
-window.closeVolunteerFormModal = closeVolunteerFormModal;
-window.submitVolunteerShift = submitVolunteerShift;
+window.switchTab = switchTab;
+window.submitVolunteerShiftTab = submitVolunteerShiftTab;
 window.resetAllSchedules = resetAllSchedules;
 window.openHistoryModal = openHistoryModal;
 window.closeHistoryModal = closeHistoryModal;
