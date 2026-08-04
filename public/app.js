@@ -1,4 +1,4 @@
-// Firebase Configuration Setup
+// --- FIREBASE CONFIGURATION ---
 const firebaseConfig = {
     apiKey: "AIzaSyDky02aMkvBY1Imz7GJWawBu1MqLR5qyE",
     authDomain: "jw-security-schedule-system.firebaseapp.com",
@@ -14,27 +14,121 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 let schedules = [];
-let currentRole = null; // 'admin' or 'user'
-
+let currentRole = sessionStorage.getItem('userRole'); // Persisted session role
 const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+
+// --- SECURITY HELPER: XSS SANITIZATION ---
+function escapeHTML(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+// --- ROUTING & AUTHENTICATION GUARD ---
+function evaluateAccessControl() {
+    const isLoginPage = !!document.getElementById('loginForm');
+    const isDashboardPage = !!document.getElementById('khTableBody');
+    currentRole = sessionStorage.getItem('userRole');
+
+    if (isLoginPage) {
+        if (currentRole === 'admin' || currentRole === 'user') {
+            window.location.replace('dashboard.html');
+            return false;
+        }
+    } else if (isDashboardPage) {
+        if (!currentRole) {
+            window.location.replace('index.html');
+            return false;
+        }
+
+        // Apply Role styling & text
+        document.body.classList.remove('role-admin', 'role-user');
+        document.body.classList.add(`role-${currentRole}`);
+        
+        const indicator = document.getElementById('roleIndicator');
+        if (indicator) {
+            if (currentRole === 'admin') {
+                indicator.textContent = "Admin Mode";
+                indicator.className = "role-badge admin";
+            } else {
+                indicator.textContent = "Volunteer Portal";
+                indicator.className = "role-badge user";
+            }
+        }
+
+        // Reveal body after successful verification
+        document.body.style.display = 'block';
+        return true;
+    }
+    return true;
+}
+
+// Check session on page DOM load
+document.addEventListener('DOMContentLoaded', () => {
+    if (evaluateAccessControl() && document.getElementById('khTableBody')) {
+        initDatabase();
+    }
+});
+
+// --- BFCACHE BACK-BUTTON KILL SWITCH ---
+// Triggers if browser attempts to load page from back/forward memory cache
+window.addEventListener('pageshow', (event) => {
+    if (event.persisted || (window.performance && window.performance.navigation && window.performance.navigation.type === 2)) {
+        evaluateAccessControl();
+    }
+});
+
+// --- CREDENTIAL LOGIN & LOGOUT HANDLERS ---
+function handleLogin(event) {
+    event.preventDefault();
+    const usernameInput = document.getElementById('usernameInput');
+    const passwordInput = document.getElementById('passwordInput');
+    const errorMsg = document.getElementById('loginError');
+
+    const username = usernameInput ? usernameInput.value.trim() : '';
+    const password = passwordInput ? passwordInput.value.trim() : '';
+
+    if (username === 'admin' && password === 'admin123') {
+        currentRole = 'admin';
+    } else if (username === 'user' && password === 'user123') {
+        currentRole = 'user';
+    } else {
+        if (errorMsg) {
+            errorMsg.textContent = "Invalid username or password. Please try again.";
+            errorMsg.style.display = 'block';
+        }
+        return;
+    }
+
+    // Save session and replace location (erases back-button history step)
+    sessionStorage.setItem('userRole', currentRole);
+    window.location.replace('dashboard.html');
+}
+
+function handleLogout() {
+    sessionStorage.clear();
+    currentRole = null;
+    window.location.replace('index.html');
+}
 
 // --- PRINT SCHEDULE FEATURE ---
 function printDailySchedule() {
     window.print();
 }
-// Explicitly expose to window object to prevent scope issues with inline HTML events
-window.printDailySchedule = printDailySchedule;
 
 // --- GMT+8 HELPER FUNCTION ---
-// Formats current or target date strictly into GMT+8 ISO Date string (YYYY-MM-DD)
 function getGMT8DateString(dateObj = new Date()) {
     const options = { timeZone: 'Asia/Manila', year: 'numeric', month: '2-digit', day: '2-digit' };
-    return new Intl.DateTimeFormat('en-CA', options).format(dateObj); // Returns "YYYY-MM-DD"
+    return new Intl.DateTimeFormat('en-CA', options).format(dateObj); // "YYYY-MM-DD"
 }
 
-// --- DYNAMICALLY SAVE / ARCHIVE TODAY'S LOG TO FIRESTORE ---
+// --- SAVE / ARCHIVE TODAY'S LOG TO FIRESTORE ---
 function saveDailyLog() {
-    const todayStr = getGMT8DateString(); // GMT+8 Date identifier
+    const todayStr = getGMT8DateString();
     
     const logData = schedules.map(slot => ({
         id: slot.id,
@@ -83,7 +177,7 @@ function checkAndAutoResetSchedules(snapshot) {
     }
 }
 
-// --- INITIALIZE & FETCH FROM FIRESTORE ---
+// --- INITIALIZE & LISTEN TO FIRESTORE ---
 function initDatabase() {
     db.collection("schedules").get().then((snapshot) => {
         if (snapshot.empty) {
@@ -121,7 +215,6 @@ function initDatabase() {
     });
 }
 
-// Real-time listener so tables auto-update whenever data changes in Firebase
 function listenToFirestore() {
     db.collection("schedules").onSnapshot((snapshot) => {
         checkAndAutoResetSchedules(snapshot);
@@ -133,57 +226,11 @@ function listenToFirestore() {
         schedules.sort((a, b) => a.id - b.id);
         renderTables();
 
-        // Keep today's history log dynamically in sync
         saveDailyLog();
     });
 }
 
-window.onload = function() {
-    initDatabase();
-};
-
-// --- CREDENTIAL LOGIN & LOGOUT HANDLERS ---
-function handleLogin(event) {
-    event.preventDefault();
-    const username = document.getElementById('usernameInput').value.trim();
-    const password = document.getElementById('passwordInput').value.trim();
-    const errorMsg = document.getElementById('loginError');
-
-    if (username === 'admin' && password === 'admin123') {
-        currentRole = 'admin';
-    } else if (username === 'user' && password === 'user123') {
-        currentRole = 'user';
-    } else {
-        errorMsg.textContent = "Invalid username or password. Please try again.";
-        errorMsg.style.display = 'block';
-        return;
-    }
-
-    errorMsg.style.display = 'none';
-    document.body.classList.remove('logged-out');
-    document.body.classList.remove('role-admin', 'role-user');
-    document.body.classList.add(`role-${currentRole}`);
-
-    const indicator = document.getElementById('roleIndicator');
-    if (currentRole === 'admin') {
-        indicator.textContent = "Admin Mode";
-        indicator.className = "role-badge admin";
-    } else {
-        indicator.textContent = "Volunteer Portal";
-        indicator.className = "role-badge user";
-    }
-
-    renderTables();
-}
-
-function handleLogout() {
-    currentRole = null;
-    document.body.classList.add('logged-out');
-    document.getElementById('loginForm').reset();
-    document.getElementById('loginError').style.display = 'none';
-}
-
-// --- RENDER TABLES ---
+// --- RENDER TABLES (XSS PROTECTED) ---
 function renderTables() {
     const khBody = document.getElementById('khTableBody');
     const bunkBody = document.getElementById('bunkTableBody');
@@ -196,12 +243,14 @@ function renderTables() {
     schedules.forEach(item => {
         const row = document.createElement('tr');
         const badgeClass = item.status === 'Confirmed' ? 'confirmed' : 'vacant';
-        const volunteerDisplay = item.volunteer_names ? item.volunteer_names : '<span style="color: #94a3b8; font-style: italic;">Unassigned Slot</span>';
+        const volunteerDisplay = item.volunteer_names 
+            ? escapeHTML(item.volunteer_names) 
+            : '<span style="color: #94a3b8; font-style: italic;">Unassigned Slot</span>';
 
         row.innerHTML = `
-            <td>${item.time_slot}</td>
+            <td>${escapeHTML(item.time_slot)}</td>
             <td>${volunteerDisplay}</td>
-            <td><span class="badge ${badgeClass}">${item.status}</span></td>
+            <td><span class="badge ${badgeClass}">${escapeHTML(item.status)}</span></td>
             <td class="admin-only text-right">
                 <button class="btn-icon edit" onclick="openEditAdminModal(${item.id})" title="Edit Slot"><i class="fa-solid fa-pen"></i></button>
                 <button class="btn-icon delete" onclick="deleteRecord(${item.id})" title="Clear Slot Volunteers"><i class="fa-solid fa-trash"></i></button>
@@ -216,19 +265,14 @@ function renderTables() {
     });
 }
 
-// --- MANUAL RESET & ARCHIVE SCHEDULES (ADMIN ONLY) ---
+// --- RESET & ARCHIVE SCHEDULES (ADMIN ONLY) ---
 function resetAllSchedules() {
-    if (currentRole !== 'admin') {
-        alert("Access Denied: Only administrators can perform a full schedule reset.");
-        return;
-    }
+    if (currentRole !== 'admin') return;
 
     const confirmReset = confirm("Are you sure you want to RESET ALL SCHEDULES?\n\nToday's log (GMT+8) will be archived to History before clearing the active table.");
     if (!confirmReset) return;
 
-    // 1. Archive current day to history logs first
     saveDailyLog().then(() => {
-        // 2. Fetch and reset live schedules
         return db.collection("schedules").get();
     }).then((snapshot) => {
         const batch = db.batch();
@@ -248,18 +292,15 @@ function resetAllSchedules() {
     });
 }
 
-// --- HISTORY CHECKLIST MODAL LOGIC (ADMIN ONLY) ---
+// --- HISTORY CHECKLIST MODAL LOGIC ---
 function openHistoryModal() {
-    if (currentRole !== 'admin') {
-        alert("Access Denied: Only administrators can view shift history logs.");
-        return;
-    }
+    if (currentRole !== 'admin') return;
 
     const datePicker = document.getElementById('historyDateSelect');
-    const todayStr = getGMT8DateString();
-    datePicker.value = todayStr;
-
-    fetchHistoryForSelectedDate();
+    if (datePicker) {
+        datePicker.value = getGMT8DateString();
+        fetchHistoryForSelectedDate();
+    }
     document.getElementById('historyModal').style.display = 'flex';
 }
 
@@ -272,7 +313,7 @@ function fetchHistoryForSelectedDate() {
     const khBody = document.getElementById('historyKhBody');
     const bunkBody = document.getElementById('historyBunkBody');
 
-    if (!selectedDate) return;
+    if (!selectedDate || !khBody || !bunkBody) return;
 
     khBody.innerHTML = '<tr><td colspan="3" style="text-align: center;">Loading history...</td></tr>';
     bunkBody.innerHTML = '<tr><td colspan="3" style="text-align: center;">Loading history...</td></tr>';
@@ -299,12 +340,14 @@ function fetchHistoryForSelectedDate() {
         records.forEach(item => {
             const row = document.createElement('tr');
             const badgeClass = item.status === 'Confirmed' ? 'confirmed' : 'vacant';
-            const volunteerDisplay = item.volunteer_names ? item.volunteer_names : '<span style="color: #94a3b8; font-style: italic;">Unassigned Slot</span>';
+            const volunteerDisplay = item.volunteer_names 
+                ? escapeHTML(item.volunteer_names) 
+                : '<span style="color: #94a3b8; font-style: italic;">Unassigned Slot</span>';
 
             row.innerHTML = `
-                <td><strong>${item.time_slot}</strong></td>
+                <td><strong>${escapeHTML(item.time_slot)}</strong></td>
                 <td>${volunteerDisplay}</td>
-                <td><span class="badge ${badgeClass}">${item.status}</span></td>
+                <td><span class="badge ${badgeClass}">${escapeHTML(item.status)}</span></td>
             `;
 
             if (item.facility_id === 1) {
@@ -322,6 +365,8 @@ function fetchHistoryForSelectedDate() {
 // --- USER FORM SUBMISSION FEATURE ---
 function openVolunteerFormModal() {
     const timeSlotSelect = document.getElementById('formTimeSlotSelect');
+    if (!timeSlotSelect) return;
+    
     timeSlotSelect.innerHTML = '';
 
     if (schedules.length === 0) {
@@ -388,6 +433,7 @@ function submitVolunteerShift(event) {
 
 // --- ADMIN CRUD OPERATIONS ---
 function openAdminModal() {
+    if (currentRole !== 'admin') return;
     document.getElementById('adminModalTitle').textContent = "Add Schedule Slot";
     document.getElementById('adminScheduleForm').reset();
     document.getElementById('slotId').value = '';
@@ -395,6 +441,7 @@ function openAdminModal() {
 }
 
 function openEditAdminModal(id) {
+    if (currentRole !== 'admin') return;
     const record = schedules.find(s => s.id === id);
     if (!record) return;
 
@@ -414,6 +461,7 @@ function closeAdminModal() {
 
 function handleAdminFormSubmit(event) {
     event.preventDefault();
+    if (currentRole !== 'admin') return;
 
     const id = document.getElementById('slotId').value;
     const facility_id = parseInt(document.getElementById('adminFacilitySelect').value);
@@ -449,6 +497,7 @@ function handleAdminFormSubmit(event) {
 }
 
 function deleteRecord(id) {
+    if (currentRole !== 'admin') return;
     if (confirm("Are you sure you want to clear this volunteer assignment and set the slot back to Vacant?")) {
         db.collection("schedules").doc(id.toString()).update({
             volunteer_names: '',
@@ -467,9 +516,10 @@ window.onclick = function(event) {
     if (event.target === document.getElementById('historyModal')) closeHistoryModal();
 };
 
-// Expose modal and administrative functions to window explicitly
+// Expose functions to global scope
 window.handleLogin = handleLogin;
 window.handleLogout = handleLogout;
+window.printDailySchedule = printDailySchedule;
 window.openVolunteerFormModal = openVolunteerFormModal;
 window.closeVolunteerFormModal = closeVolunteerFormModal;
 window.submitVolunteerShift = submitVolunteerShift;

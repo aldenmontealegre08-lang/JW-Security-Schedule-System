@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- STRICT CACHE CONTROL: Prevents browser BFCache from revealing protected schedules on Back button -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+
+    <title>JW Security Schedule System</title>
+
+    <!-- INSTANT AUTH GUARD: Immediately kicks out unauthorized users before DOM renders -->
+    <script>
+        if (!sessionStorage.getItem('userRole')) {
+            window.location.replace("index.html");
+        }
+    </script>
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase App & Firestore SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+</head>
+<!-- Body hidden by default to prevent UI flashing before auth verification completes -->
+<body style="display: none;">
+
+    <!-- MAIN NAVBAR -->
+    <header class="navbar">
+        <div class="nav-brand">
+            <img src="JW_Logo.jpg" alt="JW Logo" class="nav-logo">
+            <span>JW Security Schedule</span>
+        </div>
+        <div class="nav-controls">
+            <span id="roleIndicator" class="role-badge">Role</span>
+            <button class="btn btn-secondary btn-sm" onclick="handleLogout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+        </div>
+    </header>
+
+    <main class="container">
+        
+        <!-- PAGE HEADER & ACTIONS -->
+        <section class="page-header">
+            <div>
+                <h1>Security Shifting Schedule</h1>
+                <p>Master Schedule</p>
+            </div>
+            <div class="header-actions">
+                <!-- Print Schedule (Admin Only) -->
+                <button class="btn btn-secondary admin-only" onclick="printDailySchedule()">
+                    <i class="fa-solid fa-print"></i> Print Schedule
+                </button>
+
+                <!-- View History Logs (Admin Only) -->
+                <button class="admin-only btn btn-secondary" onclick="openHistoryModal()" title="View History Logs">
+                    <i class="fa-solid fa-clock-rotate-left"></i> History Logs
+                </button>
+
+                <!-- Reset & Archive Day (Admin Only) -->
+                <button class="admin-only btn btn-danger" onclick="resetAllSchedules()" title="Reset & Archive Day">
+                    <i class="fa-solid fa-rotate-left"></i> Reset & Archive
+                </button>
+
+                <!-- User Action: Submit Desired Schedule -->
+                <button class="btn btn-success user-only" onclick="openVolunteerFormModal()">
+                    <i class="fa-solid fa-calendar-plus"></i> Submit Schedule
+                </button>
+
+                <!-- Admin Action: Add Slot -->
+                <button class="btn btn-primary admin-only" onclick="openAdminModal()">
+                    <i class="fa-solid fa-plus"></i> Add New Slot
+                </button>
+            </div>
+        </section>
+
+        <!-- FACILITIES GRID -->
+        <div class="facility-grid">
+            <!-- Kingdom Hall Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fa-solid fa-landmark"></i> Kingdom Hall Security</h2>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Time Slot</th>
+                                <th>Volunteer/s</th>
+                                <th>Status</th>
+                                <th class="admin-only text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="khTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Bunk House Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fa-solid fa-house-chimney"></i> Bunk House Security</h2>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Time Slot</th>
+                                <th>Volunteer/s</th>
+                                <th>Status</th>
+                                <th class="admin-only text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bunkTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- USER FORM MODAL -->
+    <div id="volunteerFormModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Submit Desired Schedule</h3>
+                <span class="close-btn" onclick="closeVolunteerFormModal()">&times;</span>
+            </div>
+            <form id="shiftSubmissionForm" onsubmit="submitVolunteerShift(event)">
+                <div class="form-group text-left">
+                    <label for="volunteerFullName">Your Full Name</label>
+                    <input type="text" id="volunteerFullName" placeholder="e.g., Juan Dela Cruz" required>
+                    <small style="color: #64748b; font-size: 0.75rem;">Enter your name. Up to 4 volunteers can sign up per slot.</small>
+                </div>
+                <div class="form-group text-left">
+                    <label for="formTimeSlotSelect">Select Facility & Time Slot</label>
+                    <select id="formTimeSlotSelect" class="form-control" required></select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeVolunteerFormModal()">Cancel</button>
+                    <button type="submit" class="btn btn-success">Submit Schedule</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADMIN CRUD MODAL -->
+    <div id="adminCrudModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="adminModalTitle">Manage Slot</h3>
+                <span class="close-btn" onclick="closeAdminModal()">&times;</span>
+            </div>
+            <form id="adminScheduleForm" onsubmit="handleAdminFormSubmit(event)">
+                <input type="hidden" id="slotId">
+                <div class="form-group text-left">
+                    <label>Facility</label>
+                    <select id="adminFacilitySelect" class="form-control" required>
+                        <option value="1">Kingdom Hall</option>
+                        <option value="2">Bunk House</option>
+                    </select>
+                </div>
+                <div class="form-group text-left">
+                    <label>Time Slot</label>
+                    <input type="text" id="adminTimeSlotInput" placeholder="e.g., 6:00pm - 9:00pm" required>
+                </div>
+                <div class="form-group text-left">
+                    <label>Volunteer Names</label>
+                    <input type="text" id="adminVolunteerInput" placeholder="e.g., John, Mark, Sarah (comma-separated)">
+                </div>
+                <div class="form-group text-left">
+                    <label>Status</label>
+                    <select id="adminStatusSelect" class="form-control" required>
+                        <option value="Confirmed">Confirmed</option>
+                        <option value="Vacant">Vacant</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeAdminModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- HISTORY CHECKLIST MODAL (ADMIN ONLY) -->
+    <div id="historyModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-calendar-check"></i> Shift History Checklist (GMT+8)</h3>
+                <span class="close-btn" onclick="closeHistoryModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="history-filter">
+                    <label for="historyDateSelect"><strong>Select Date:</strong></label>
+                    <input type="date" id="historyDateSelect" onchange="fetchHistoryForSelectedDate()">
+                    <span id="historyStatusBadge" class="badge confirmed">GMT+8 Log</span>
+                </div>
+
+                <div id="historyTableContainer">
+                    <h4 style="margin-bottom: 10px;"><i class="fa-solid fa-landmark"></i> Kingdom Hall Security</h4>
+                    <div class="table-container" style="margin-bottom: 20px;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Time Slot</th>
+                                    <th>Assigned Volunteers</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyKhBody">
+                                <tr><td colspan="3" style="text-align: center; color: #94a3b8;">Select a date to view history logs.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h4 style="margin-bottom: 10px;"><i class="fa-solid fa-house-chimney"></i> Bunk House Security</h4>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Time Slot</th>
+                                    <th>Assigned Volunteers</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyBunkBody">
+                                <tr><td colspan="3" style="text-align: center; color: #94a3b8;">Select a date to view history logs.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer text-right" style="margin-top: 20px;">
+                <button type="button" class="btn btn-secondary" onclick="closeHistoryModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
