@@ -134,8 +134,8 @@ function renderTables() {
             <td>${volunteerDisplay}</td>
             <td><span class="badge ${badgeClass}">${item.status}</span></td>
             <td class="admin-only text-right">
-                <button class="btn-icon edit" onclick="openEditAdminModal(${item.id})"><i class="fa-solid fa-pen"></i></button>
-                <button class="btn-icon delete" onclick="deleteRecord(${item.id})"><i class="fa-solid fa-trash"></i></button>
+                <button class="btn-icon edit" onclick="openEditAdminModal(${item.id})" title="Edit Slot"><i class="fa-solid fa-pen"></i></button>
+                <button class="btn-icon delete" onclick="deleteRecord(${item.id})" title="Clear Slot Volunteers"><i class="fa-solid fa-trash"></i></button>
             </td>
         `;
 
@@ -377,10 +377,25 @@ function handleAdminFormSubmit(event) {
     });
 }
 
+// Resets volunteer assignments without deleting the time slot structure from the table
 function deleteRecord(id) {
-    if (confirm("Are you sure you want to delete this slot?")) {
+    if (confirm("Are you sure you want to clear this volunteer assignment and set the slot back to Vacant?")) {
+        db.collection("schedules").doc(id.toString()).update({
+            volunteer_names: '',
+            status: 'Vacant'
+        }).then(() => {
+            // Updated successfully in real-time
+        }).catch((error) => {
+            alert("Error clearing record: " + error.message);
+        });
+    }
+}
+
+// Permanent removal helper in case an admin truly wants to delete a custom time slot
+function permanentlyDeleteSlot(id) {
+    if (confirm("WARNING: Are you sure you want to PERMANENTLY delete this entire time slot from the database?")) {
         db.collection("schedules").doc(id.toString()).delete().catch((error) => {
-            alert("Error deleting record: " + error.message);
+            alert("Error deleting time slot: " + error.message);
         });
     }
 }
