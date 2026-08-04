@@ -18,6 +18,13 @@ let currentRole = null; // 'admin' or 'user'
 
 const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
 
+// --- PRINT SCHEDULE FEATURE ---
+function printDailySchedule() {
+    window.print();
+}
+// Explicitly expose to window object to prevent scope issues with inline HTML events
+window.printDailySchedule = printDailySchedule;
+
 // --- GMT+8 HELPER FUNCTION ---
 // Formats current or target date strictly into GMT+8 ISO Date string (YYYY-MM-DD)
 function getGMT8DateString(dateObj = new Date()) {
@@ -453,8 +460,25 @@ function deleteRecord(id) {
     }
 }
 
+// --- GLOBAL EVENT BINDINGS FOR MODALS ---
 window.onclick = function(event) {
     if (event.target === document.getElementById('volunteerFormModal')) closeVolunteerFormModal();
     if (event.target === document.getElementById('adminCrudModal')) closeAdminModal();
     if (event.target === document.getElementById('historyModal')) closeHistoryModal();
 };
+
+// Expose modal and administrative functions to window explicitly
+window.handleLogin = handleLogin;
+window.handleLogout = handleLogout;
+window.openVolunteerFormModal = openVolunteerFormModal;
+window.closeVolunteerFormModal = closeVolunteerFormModal;
+window.submitVolunteerShift = submitVolunteerShift;
+window.resetAllSchedules = resetAllSchedules;
+window.openHistoryModal = openHistoryModal;
+window.closeHistoryModal = closeHistoryModal;
+window.fetchHistoryForSelectedDate = fetchHistoryForSelectedDate;
+window.openAdminModal = openAdminModal;
+window.openEditAdminModal = openEditAdminModal;
+window.closeAdminModal = closeAdminModal;
+window.handleAdminFormSubmit = handleAdminFormSubmit;
+window.deleteRecord = deleteRecord;
