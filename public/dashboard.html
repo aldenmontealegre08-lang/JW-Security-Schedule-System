@@ -4,21 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- STRICT CACHE CONTROL -->
+    <!-- STRICT CACHE CONTROL[cite: 14] -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
 
     <title>JW Security Schedule System</title>
 
-    <!-- INSTANT AUTH GUARD -->
+    <!-- PWA / APP ICON CONFIGURATION -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="LOGO1.png">
+    <link rel="icon" type="image/png" href="LOGO2.png">
+    <meta name="theme-color" content="#0b0f19">
+
+    <!-- INSTANT AUTH GUARD[cite: 14] -->
     <script>
         if (!sessionStorage.getItem('userRole')) {
             window.location.replace("index.html");
         }
     </script>
 
-    <!-- Google Fonts for Enterprise Typography -->
+    <!-- Google Fonts for Enterprise Typography[cite: 14] -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -26,13 +32,13 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Firebase App & Firestore SDKs -->
+    <!-- Firebase App & Firestore SDKs[cite: 14] -->
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 </head>
 <body style="display: none;">
 
-    <!-- ENTERPRISE NAVBAR -->
+    <!-- ENTERPRISE NAVBAR[cite: 14] -->
     <header class="navbar">
         <div class="nav-brand">
             <img src="JW_Logo.jpg" alt="JW Logo" class="nav-logo">
@@ -46,7 +52,7 @@
 
     <main class="container">
         
-        <!-- PAGE HEADER & ENTERPRISE ACTIONS -->
+        <!-- PAGE HEADER & ENTERPRISE ACTIONS[cite: 14] -->
         <section class="page-header">
             <div>
                 <h1>Security Shifting Operations</h1>
@@ -75,7 +81,7 @@
             </div>
         </section>
 
-        <!-- FACILITIES GRID -->
+        <!-- FACILITIES GRID[cite: 14] -->
         <div class="facility-grid">
             <!-- Kingdom Hall Card -->
             <div class="card">
@@ -119,7 +125,7 @@
         </div>
     </main>
 
-    <!-- USER FORM MODAL -->
+    <!-- USER FORM MODAL[cite: 14] -->
     <div id="volunteerFormModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -144,7 +150,7 @@
         </div>
     </div>
 
-    <!-- ADMIN CRUD MODAL -->
+    <!-- ADMIN CRUD MODAL[cite: 14] -->
     <div id="adminCrudModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -183,7 +189,7 @@
         </div>
     </div>
 
-    <!-- HISTORY AUDIT LOG MODAL -->
+    <!-- HISTORY AUDIT LOG MODAL[cite: 14] -->
     <div id="historyModal" class="modal">
         <div class="modal-content modal-large">
             <div class="modal-header">

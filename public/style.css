@@ -73,7 +73,6 @@ body { background-color: var(--bg); color: var(--text); line-height: 1.6; min-he
     border-left: 4px solid var(--danger);
 }
 
-/* Password Visibility Wrapper & Toggle Button (Mobile Optimized Flex Container) */
 .password-wrapper {
     display: flex;
     align-items: center;
@@ -208,7 +207,6 @@ body { background-color: var(--bg); color: var(--text); line-height: 1.6; min-he
 .btn-icon.edit:hover { color: var(--accent); }
 .btn-icon.delete:hover { color: var(--danger); }
 
-/* Global Mobile Touch Optimization for all Buttons and Controls */
 button, .btn, .btn-icon, .password-toggle-btn {
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
@@ -292,13 +290,9 @@ form { padding: 1.5rem; }
 .history-filter { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; background: #f8fafc; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border); }
 .history-filter input { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); font-size: 0.9rem; background: white; }
 
-/* ---------------- ROLE-BASED VISIBILITY ACCESS ---------------- */
 body.role-user .admin-only { display: none !important; }
 body.role-admin .user-only { display: none !important; }
 
-/* ==========================================
-   MOBILE & TABLET RESPONSIVE STYLES (ANDROID & IOS PARITY)
-   ========================================== */
 @media screen and (max-width: 768px) {
     .container { padding: 0 0.5rem; margin: 0.5rem auto; width: 100%; }
     .navbar { padding: 0.75rem 1rem; }
@@ -315,9 +309,7 @@ body.role-admin .user-only { display: none !important; }
         gap: 1rem;
     }
 
-    .card {
-        overflow: visible; /* Prevents Android WebViews from hard-clipping table contents */
-    }
+    .card { overflow: visible; }
 
     .role-admin .header-actions,
     .role-user .header-actions {
@@ -337,24 +329,11 @@ body.role-admin .user-only { display: none !important; }
         white-space: normal;
     }
 
-    /* Fixed table layout guarantees time slots, personnel, status, and buttons fit side-by-side without clipping */
-    .table-container { 
-        width: 100%;
-        overflow-x: visible;
-    }
+    .table-container { width: 100%; overflow-x: visible; }
+    table { width: 100%; table-layout: fixed; }
 
-    table { 
-        width: 100%; 
-        table-layout: fixed;
-    }
+    th, td { padding: 8px 6px; font-size: 0.75rem; word-break: break-word; }
 
-    th, td { 
-        padding: 8px 6px; 
-        font-size: 0.75rem; 
-        word-break: break-word;
-    }
-
-    /* Proportional column sizing for mobile screens (Total = 100%) */
     table th:nth-child(1), table td:nth-child(1) { width: 28%; font-weight: 600; }
     table th:nth-child(2), table td:nth-child(2) { width: 34%; }
     table th:nth-child(3), table td:nth-child(3) { width: 21%; }
@@ -367,24 +346,9 @@ body.role-admin .user-only { display: none !important; }
         white-space: nowrap;
     }
 
-    .btn-icon {
-        padding: 6px 4px;
-        font-size: 0.85rem;
-    }
+    .btn-icon { padding: 6px 4px; font-size: 0.85rem; }
 
-    .modal-content { 
-        width: 95%; 
-        margin: auto; 
-        max-height: 85vh; 
-    }
-    
-    .form-actions { 
-        flex-direction: column-reverse; 
-        gap: 8px; 
-    }
-    
-    .form-actions .btn { 
-        width: 100%; 
-        justify-content: center; 
-    }
+    .modal-content { width: 95%; margin: auto; max-height: 85vh; }
+    .form-actions { flex-direction: column-reverse; gap: 8px; }
+    .form-actions .btn { width: 100%; justify-content: center; }
 }

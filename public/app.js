@@ -1,4 +1,4 @@
-// --- FIREBASE CONFIGURATION ---
+// --- FIREBASE CONFIGURATION[cite: 13] ---
 const firebaseConfig = {
     apiKey: "AIzaSyDky02aMkvBY1Imz7GJWawBu1MqLR5qyE",
     authDomain: "jw-security-schedule-system.firebaseapp.com",
@@ -9,7 +9,7 @@ const firebaseConfig = {
     measurementId: "G-TFBKBV3731"
 };
 
-// Initialize Firebase
+// Initialize Firebase[cite: 13]
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
@@ -17,7 +17,7 @@ let schedules = [];
 let currentRole = sessionStorage.getItem('userRole');
 const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
 
-// --- SECURITY HELPER: XSS SANITIZATION ---
+// --- SECURITY HELPER: XSS SANITIZATION[cite: 13] ---
 function escapeHTML(str) {
     if (!str) return '';
     return String(str)
@@ -28,7 +28,7 @@ function escapeHTML(str) {
         .replace(/'/g, '&#039;');
 }
 
-// --- DYNAMIC TIME PARSER FOR ACCURATE CHRONOLOGICAL SORTING ---
+// --- DYNAMIC TIME PARSER FOR ACCURATE CHRONOLOGICAL SORTING[cite: 13] ---
 function getStartTimeInMinutes(timeSlotStr) {
     if (!timeSlotStr) return 0;
     
@@ -46,7 +46,7 @@ function getStartTimeInMinutes(timeSlotStr) {
     return hours * 60 + minutes;
 }
 
-// --- ROUTING & AUTHENTICATION GUARD ---
+// --- ROUTING & AUTHENTICATION GUARD[cite: 13] ---
 function evaluateAccessControl() {
     const isLoginPage = !!document.getElementById('loginForm');
     const isDashboardPage = !!document.getElementById('khTableBody');
@@ -95,7 +95,7 @@ window.addEventListener('pageshow', (event) => {
     }
 });
 
-// --- CREDENTIAL LOGIN & LOGOUT HANDLERS ---
+// --- CREDENTIAL LOGIN & LOGOUT HANDLERS[cite: 13] ---
 function handleLogin(event) {
     event.preventDefault();
     const usernameInput = document.getElementById('usernameInput');
@@ -127,7 +127,7 @@ function handleLogout() {
     window.location.replace('index.html');
 }
 
-// --- PASSWORD VISIBILITY TOGGLE (MOBILE OPTIMIZED) ---
+// --- PASSWORD VISIBILITY TOGGLE (MOBILE OPTIMIZED)[cite: 13] ---
 function togglePasswordVisibility() {
     const passwordInput = document.getElementById('passwordInput');
     const toggleIcon = document.getElementById('togglePasswordIcon');
@@ -198,7 +198,7 @@ function checkAndAutoResetSchedules(snapshot) {
     }
 }
 
-// --- INITIALIZE & REALTIME LISTENERS ---
+// --- INITIALIZE & REALTIME LISTENERS[cite: 13] ---
 function initDatabase() {
     db.collection("schedules").get().then((snapshot) => {
         if (snapshot.empty) {
@@ -258,7 +258,7 @@ function listenToFirestore() {
     });
 }
 
-// --- RENDER TABLES ---
+// --- RENDER TABLES[cite: 13] ---
 function renderTables() {
     const khBody = document.getElementById('khTableBody');
     const bunkBody = document.getElementById('bunkTableBody');
@@ -293,7 +293,7 @@ function renderTables() {
     });
 }
 
-// --- RESET ALL SCHEDULES AND RESTORE DEFAULT SEQUENTIAL SLOTS ---
+// --- RESET ALL SCHEDULES AND RESTORE DEFAULT SEQUENTIAL SLOTS[cite: 13] ---
 function resetAllSchedules() {
     if (currentRole !== 'admin') return;
 
@@ -316,7 +316,7 @@ function resetAllSchedules() {
     });
 }
 
-// --- HISTORY LOGS ---
+// --- HISTORY LOGS[cite: 13] ---
 function openHistoryModal() {
     if (currentRole !== 'admin') return;
 
@@ -388,7 +388,7 @@ function fetchHistoryForSelectedDate() {
     });
 }
 
-// --- USER FORM SUBMISSION ---
+// --- USER FORM SUBMISSION[cite: 13] ---
 function openVolunteerFormModal() {
     const timeSlotSelect = document.getElementById('formTimeSlotSelect');
     if (!timeSlotSelect) return;
@@ -457,7 +457,7 @@ function submitVolunteerShift(event) {
     }
 }
 
-// --- ADMIN CRUD OPERATIONS ---
+// --- ADMIN CRUD OPERATIONS[cite: 13] ---
 function openAdminModal() {
     if (currentRole !== 'admin') return;
     document.getElementById('adminModalTitle').textContent = "Add Schedule Slot";
@@ -535,7 +535,7 @@ function deleteRecord(id) {
     }
 }
 
-// --- MOBILE-FRIENDLY WINDOW EVENT LISTENERS ---
+// --- MOBILE-FRIENDLY WINDOW EVENT LISTENERS[cite: 13] ---
 window.addEventListener('click', function(event) {
     if (event.target.classList.contains('modal')) {
         if (event.target.id === 'volunteerFormModal') closeVolunteerFormModal();
@@ -552,7 +552,7 @@ window.addEventListener('touchend', function(event) {
     }
 });
 
-// --- GLOBAL EXPORTS ---
+// --- GLOBAL EXPORTS[cite: 13] ---
 window.handleLogin = handleLogin;
 window.handleLogout = handleLogout;
 window.togglePasswordVisibility = togglePasswordVisibility;
