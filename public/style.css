@@ -167,13 +167,14 @@ body { background-color: var(--bg); color: var(--text); line-height: 1.6; min-he
     overflow: hidden; 
     box-shadow: var(--shadow-sm);
     transition: box-shadow 0.3s ease;
+    min-width: 0;
 }
 .card:hover { box-shadow: var(--shadow-md); }
 .card-header { background-color: #fafbfc; padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); }
 .card-header h2 { font-size: 1.1rem; color: var(--primary); display: flex; align-items: center; gap: 10px; font-weight: 700; }
 .card-header h2 i { color: var(--accent); }
 
-.table-container { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table-container { width: 100%; overflow-x: visible; }
 table { width: 100%; border-collapse: collapse; text-align: left; }
 th, td { padding: 12px 1.5rem; border-bottom: 1px solid var(--border); font-size: 0.875rem; }
 th { background-color: #fafbfc; color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.08em; }
@@ -241,10 +242,10 @@ body.role-user .admin-only { display: none !important; }
 body.role-admin .user-only { display: none !important; }
 
 /* ==========================================
-   MOBILE & TABLET RESPONSIVE STYLES (ANDROID & IOS)
+   MOBILE & TABLET RESPONSIVE STYLES (ANDROID & IOS PARITY)
    ========================================== */
 @media screen and (max-width: 768px) {
-    .container { padding: 0 0.75rem; margin: 0.75rem auto; width: 100%; }
+    .container { padding: 0 0.5rem; margin: 0.5rem auto; width: 100%; }
     .navbar { padding: 0.75rem 1rem; }
 
     .page-header {
@@ -259,7 +260,10 @@ body.role-admin .user-only { display: none !important; }
         gap: 1rem;
     }
 
-    /* Stack header action buttons cleanly so nothing gets cut off on narrow screens */
+    .card {
+        overflow: visible; /* Prevents Android WebViews from hard-clipping table contents */
+    }
+
     .role-admin .header-actions,
     .role-user .header-actions {
         display: flex;
@@ -275,42 +279,42 @@ body.role-admin .user-only { display: none !important; }
         font-size: 0.85rem;
         justify-content: center;
         text-align: center;
-        white-space: normal; /* Prevents button text clipping */
+        white-space: normal;
     }
 
-    /* Table & Time Slot visibility fixes */
+    /* Fixed table layout guarantees time slots, personnel, status, and buttons fit side-by-side without clipping */
     .table-container { 
         width: 100%;
-        overflow-x: auto; 
-        -webkit-overflow-scrolling: touch; 
+        overflow-x: visible;
     }
 
     table { 
         width: 100%; 
-        min-width: 420px; /* Ensures table columns retain proper proportions without hiding time slots */
+        table-layout: fixed;
     }
 
     th, td { 
-        padding: 10px 10px; 
-        font-size: 0.8rem; 
+        padding: 8px 6px; 
+        font-size: 0.75rem; 
+        word-break: break-word;
     }
 
-    /* Keep time slots pinned/clearly legible without breaking awkwardly */
-    td:first-child, th:first-child {
-        white-space: nowrap;
-        font-weight: 600;
-    }
-
+    /* Proportional column sizing for mobile screens (Total = 100%) */
+    table th:nth-child(1), table td:nth-child(1) { width: 28%; font-weight: 600; }
+    table th:nth-child(2), table td:nth-child(2) { width: 34%; }
+    table th:nth-child(3), table td:nth-child(3) { width: 21%; }
+    
     .role-admin td.admin-only,
     .role-admin th.admin-only {
-        width: 75px;
+        width: 17%;
         text-align: center;
         padding: 6px 2px;
+        white-space: nowrap;
     }
 
     .btn-icon {
-        padding: 8px;
-        font-size: 1rem; /* Better touch target size for Android and iOS */
+        padding: 6px 4px;
+        font-size: 0.85rem;
     }
 
     .modal-content { 
