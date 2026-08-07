@@ -173,7 +173,7 @@ body { background-color: var(--bg); color: var(--text); line-height: 1.6; min-he
 .card-header h2 { font-size: 1.1rem; color: var(--primary); display: flex; align-items: center; gap: 10px; font-weight: 700; }
 .card-header h2 i { color: var(--accent); }
 
-.table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table-container { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 table { width: 100%; border-collapse: collapse; text-align: left; }
 th, td { padding: 12px 1.5rem; border-bottom: 1px solid var(--border); font-size: 0.875rem; }
 th { background-color: #fafbfc; color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.08em; }
@@ -197,7 +197,7 @@ tr:last-child td { border-bottom: none; }
     top: 0; 
     width: 100%; 
     height: 100%;
-    background-color: rgba(11, 15, 25, 0.85); /* Solid overlay to prevent mobile lag */
+    background-color: rgba(11, 15, 25, 0.85);
     justify-content: center; 
     align-items: center; 
     padding: 1rem;
@@ -210,7 +210,7 @@ tr:last-child td { border-bottom: none; }
     border-radius: 14px; 
     width: 100%; 
     max-width: 500px; 
-    max-height: 90vh; /* Prevents overflow past mobile viewport */
+    max-height: 90vh; 
     display: flex;
     flex-direction: column;
     overflow-y: auto; 
@@ -241,61 +241,91 @@ body.role-user .admin-only { display: none !important; }
 body.role-admin .user-only { display: none !important; }
 
 /* ==========================================
-   MOBILE & TABLET RESPONSIVE STYLES
+   MOBILE & TABLET RESPONSIVE STYLES (ANDROID & IOS)
    ========================================== */
 @media screen and (max-width: 768px) {
-    .container { padding: 0 1rem; margin: 1rem auto; }
-    .navbar { padding: 0.85rem 1rem; }
+    .container { padding: 0 0.75rem; margin: 0.75rem auto; width: 100%; }
+    .navbar { padding: 0.75rem 1rem; }
 
     .page-header {
         flex-direction: column;
-        align-items: flex-start;
-        gap: 16px;
-        padding: 1.25rem;
+        align-items: stretch;
+        gap: 12px;
+        padding: 1rem;
     }
 
     .facility-grid {
         grid-template-columns: 1fr;
-        gap: 1.25rem;
+        gap: 1rem;
     }
 
-    .role-admin .header-actions {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
+    /* Stack header action buttons cleanly so nothing gets cut off on narrow screens */
+    .role-admin .header-actions,
+    .role-user .header-actions {
+        display: flex;
+        flex-direction: column;
         gap: 8px;
         width: 100%;
     }
 
-    .role-admin .header-actions .btn {
-        width: 100%;
-        padding: 10px 8px;
-        font-size: 0.8rem;
-        justify-content: center;
-        text-align: center;
-        white-space: nowrap;
-    }
-
-    .role-user .header-actions {
-        width: 100%;
-    }
-
+    .role-admin .header-actions .btn,
     .role-user .header-actions .btn {
         width: 100%;
+        padding: 11px 14px;
+        font-size: 0.85rem;
         justify-content: center;
-        padding: 11px;
+        text-align: center;
+        white-space: normal; /* Prevents button text clipping */
     }
 
-    table { min-width: 500px; }
-    th, td { padding: 10px 12px; font-size: 0.825rem; }
+    /* Table & Time Slot visibility fixes */
+    .table-container { 
+        width: 100%;
+        overflow-x: auto; 
+        -webkit-overflow-scrolling: touch; 
+    }
+
+    table { 
+        width: 100%; 
+        min-width: 420px; /* Ensures table columns retain proper proportions without hiding time slots */
+    }
+
+    th, td { 
+        padding: 10px 10px; 
+        font-size: 0.8rem; 
+    }
+
+    /* Keep time slots pinned/clearly legible without breaking awkwardly */
+    td:first-child, th:first-child {
+        white-space: nowrap;
+        font-weight: 600;
+    }
 
     .role-admin td.admin-only,
     .role-admin th.admin-only {
-        width: 80px;
+        width: 75px;
         text-align: center;
-        padding: 4px;
+        padding: 6px 2px;
     }
 
-    .modal-content { width: 95%; margin: auto; max-height: 85vh; }
-    .form-actions { flex-direction: column-reverse; }
-    .form-actions .btn { width: 100%; justify-content: center; }
+    .btn-icon {
+        padding: 8px;
+        font-size: 1rem; /* Better touch target size for Android and iOS */
+    }
+
+    .modal-content { 
+        width: 95%; 
+        margin: auto; 
+        max-height: 85vh; 
+    }
+    
+    .form-actions { 
+        flex-direction: column-reverse; 
+        gap: 8px; 
+    }
+    
+    .form-actions .btn { 
+        width: 100%; 
+        justify-content: center; 
+    }
 }
