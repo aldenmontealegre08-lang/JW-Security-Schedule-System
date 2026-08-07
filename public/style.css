@@ -73,6 +73,39 @@ body { background-color: var(--bg); color: var(--text); line-height: 1.6; min-he
     border-left: 4px solid var(--danger);
 }
 
+/* Password Visibility Wrapper & Toggle Button */
+.password-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.password-wrapper input {
+    width: 100%;
+    padding-right: 2.75rem; /* Reserve space so text doesn't overlap the eye icon */
+}
+
+.password-toggle-btn {
+    position: absolute;
+    right: 0.75rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 1rem;
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s ease;
+    z-index: 2;
+}
+
+.password-toggle-btn:hover {
+    color: var(--primary);
+}
+
 /* ---------------- NAVBAR ---------------- */
 .navbar {
     background-color: var(--primary);

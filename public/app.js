@@ -127,6 +127,23 @@ function handleLogout() {
     window.location.replace('index.html');
 }
 
+// --- PASSWORD VISIBILITY TOGGLE ---
+function togglePasswordVisibility() {
+    const passwordInput = document.getElementById('passwordInput');
+    const toggleIcon = document.getElementById('togglePasswordIcon');
+    if (!passwordInput || !toggleIcon) return;
+
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleIcon.classList.remove('fa-eye');
+        toggleIcon.classList.add('fa-eye-slash');
+    } else {
+        passwordInput.type = 'password';
+        toggleIcon.classList.remove('fa-eye-slash');
+        toggleIcon.classList.add('fa-eye');
+    }
+}
+
 function printDailySchedule() {
     window.print();
 }
@@ -529,6 +546,7 @@ window.onclick = function(event) {
 
 window.handleLogin = handleLogin;
 window.handleLogout = handleLogout;
+window.togglePasswordVisibility = togglePasswordVisibility;
 window.printDailySchedule = printDailySchedule;
 window.openVolunteerFormModal = openVolunteerFormModal;
 window.closeVolunteerFormModal = closeVolunteerFormModal;
