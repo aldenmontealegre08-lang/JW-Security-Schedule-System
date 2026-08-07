@@ -73,32 +73,48 @@ body { background-color: var(--bg); color: var(--text); line-height: 1.6; min-he
     border-left: 4px solid var(--danger);
 }
 
-/* Password Visibility Wrapper & Toggle Button */
+/* Password Visibility Wrapper & Toggle Button (Mobile Optimized Flex Container) */
 .password-wrapper {
-    position: relative;
     display: flex;
     align-items: center;
     width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #fff;
+    transition: all 0.2s ease;
+    overflow: hidden;
+}
+
+.password-wrapper:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
 .password-wrapper input {
     width: 100%;
-    padding-right: 2.75rem; /* Reserve space so text doesn't overlap the eye icon */
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    padding: 0.65rem 0.875rem;
+    background: transparent;
+    font-size: 0.9rem;
 }
 
 .password-toggle-btn {
-    position: absolute;
-    right: 0.75rem;
     background: none;
     border: none;
     cursor: pointer;
     color: var(--text-muted);
     font-size: 1rem;
-    padding: 0.25rem;
+    padding: 0 1rem;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: color 0.15s ease;
+    flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
     z-index: 2;
 }
 
@@ -191,6 +207,12 @@ body { background-color: var(--bg); color: var(--text); line-height: 1.6; min-he
 .btn-icon:hover { background-color: #f1f5f9; }
 .btn-icon.edit:hover { color: var(--accent); }
 .btn-icon.delete:hover { color: var(--danger); }
+
+/* Global Mobile Touch Optimization for all Buttons and Controls */
+button, .btn, .btn-icon, .password-toggle-btn {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
 
 /* ---------------- CARDS & TABLES ---------------- */
 .card { 

@@ -127,7 +127,7 @@ function handleLogout() {
     window.location.replace('index.html');
 }
 
-// --- PASSWORD VISIBILITY TOGGLE ---
+// --- PASSWORD VISIBILITY TOGGLE (MOBILE OPTIMIZED) ---
 function togglePasswordVisibility() {
     const passwordInput = document.getElementById('passwordInput');
     const toggleIcon = document.getElementById('togglePasswordIcon');
@@ -535,15 +535,24 @@ function deleteRecord(id) {
     }
 }
 
-// --- FIXED MOBILE TOUCH-FRIENDLY WINDOW CLICK LISTENER ---
-window.onclick = function(event) {
+// --- MOBILE-FRIENDLY WINDOW EVENT LISTENERS ---
+window.addEventListener('click', function(event) {
     if (event.target.classList.contains('modal')) {
         if (event.target.id === 'volunteerFormModal') closeVolunteerFormModal();
         if (event.target.id === 'adminCrudModal') closeAdminModal();
         if (event.target.id === 'historyModal') closeHistoryModal();
     }
-};
+});
 
+window.addEventListener('touchend', function(event) {
+    if (event.target.classList.contains('modal')) {
+        if (event.target.id === 'volunteerFormModal') closeVolunteerFormModal();
+        if (event.target.id === 'adminCrudModal') closeAdminModal();
+        if (event.target.id === 'historyModal') closeHistoryModal();
+    }
+});
+
+// --- GLOBAL EXPORTS ---
 window.handleLogin = handleLogin;
 window.handleLogout = handleLogout;
 window.togglePasswordVisibility = togglePasswordVisibility;
