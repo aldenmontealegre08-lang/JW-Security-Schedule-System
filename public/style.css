@@ -322,8 +322,8 @@ body.role-admin .user-only { display: none !important; }
 
     .role-admin .header-actions,
     .role-user .header-actions {
-        display: flex;
-        flex-direction: column;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
         gap: 8px;
         width: 100%;
     }
@@ -331,8 +331,8 @@ body.role-admin .user-only { display: none !important; }
     .role-admin .header-actions .btn,
     .role-user .header-actions .btn {
         width: 100%;
-        padding: 11px 14px;
-        font-size: 0.85rem;
+        padding: 11px 10px;
+        font-size: 0.8rem;
         justify-content: center;
         text-align: center;
         white-space: normal;
