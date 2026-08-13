@@ -51,7 +51,6 @@ body { background-color: var(--bg); color: var(--text); line-height: 1.6; min-he
     box-shadow: var(--shadow-lg);
     text-align: center;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-top: 4px solid var(--gold);
 }
 
 .login-logo {
@@ -179,7 +178,6 @@ body { background-color: var(--bg); color: var(--text); line-height: 1.6; min-he
     border-radius: var(--radius);
     box-shadow: var(--shadow-sm);
     border: 1px solid var(--border);
-    border-left: 4px solid var(--accent);
 }
 .page-header h1 { font-size: 1.65rem; color: var(--primary); font-weight: 700; letter-spacing: -0.025em; }
 .page-header p { color: var(--text-muted); font-size: 0.9rem; margin-top: 2px; }
