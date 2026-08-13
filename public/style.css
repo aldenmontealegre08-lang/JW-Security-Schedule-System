@@ -1,24 +1,29 @@
 :root {
-    --primary: #0b0f19;
-    --primary-light: #1e293b;
-    --accent: #0031b8;
-    --accent-hover: #0059ff;
-    --accent-glow: rgba(79, 70, 229, 0.15);
-    --success: #059669;
-    --success-bg: #ecfdf5;
-    --success-text: #065f46;
-    --danger: #dc2626;
-    --danger-bg: #fef2f2;
-    --danger-text: #991b1b;
-    --bg: #f8fafc;
-    --card-bg: #ffffff;
-    --text: #1e293b;
-    --text-muted: #64748b;
-    --border: #e2e8f0;
-    --radius: 10px;
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+    /* --- BRAND PALETTE (derived from logo: deep-to-bright blue field + gold hard hat) --- */
+    --primary: #0A1B3D;          /* deep navy — navbar, headings */
+    --primary-soft: #142A54;
+    --accent: #0B5FE0;            /* logo blue — primary actions */
+    --accent-hover: #1470FA;
+    --accent-glow: rgba(11, 95, 224, 0.16);
+    --gold: #F2A900;              /* helmet gold — secondary accent / admin */
+    --gold-dark: #C98A00;
+    --gold-bg: #FFF6E0;
+    --gold-text: #8A5A00;
+    --success: #0E9A6C;
+    --success-bg: #E7F8F1;
+    --success-text: #0B6B4C;
+    --danger: #DC2626;
+    --danger-bg: #FEF2F2;
+    --danger-text: #991B1B;
+    --bg: #F3F6FB;
+    --card-bg: #FFFFFF;
+    --text: #101B33;
+    --text-muted: #64748B;
+    --border: #E3E8F0;
+    --radius: 12px;
+    --shadow-sm: 0 1px 2px 0 rgba(10, 27, 61, 0.05);
+    --shadow-md: 0 6px 16px -4px rgba(10, 27, 61, 0.10), 0 2px 6px -2px rgba(10, 27, 61, 0.06);
+    --shadow-lg: 0 24px 48px -12px rgba(10, 27, 61, 0.35), 0 8px 16px -4px rgba(10, 27, 61, 0.12);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
@@ -29,7 +34,7 @@ body { background-color: var(--bg); color: var(--text); line-height: 1.6; min-he
     display: flex;
     justify-content: center;
     align-items: center;
-    background: radial-gradient(circle at center, #1e293b 0%, #0b0f19 100%);
+    background: radial-gradient(circle at 30% 20%, #2E8BFF 0%, #0B5FE0 38%, #0A1B3D 100%);
     padding: 1rem;
 }
 
@@ -41,24 +46,25 @@ body { background-color: var(--bg); color: var(--text); line-height: 1.6; min-he
 .login-card {
     background: var(--card-bg);
     padding: 2.75rem 2.25rem;
-    border-radius: 16px;
+    border-radius: 20px;
     width: 100%;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--shadow-lg);
     text-align: center;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 4px solid var(--gold);
 }
 
-.login-logo { 
-    height: 3.5rem; 
-    width: 3.5rem; 
-    object-fit: contain; 
-    margin: 0 auto 1rem auto; 
-    display: block; 
-    border-radius: 8px;
+.login-logo {
+    height: 4rem;
+    width: 4rem;
+    object-fit: contain;
+    margin: 0 auto 1.1rem auto;
+    display: block;
+    border-radius: 10px;
     box-shadow: var(--shadow-sm);
 }
 
-.login-header h1 { color: var(--primary); margin-bottom: 0.35rem; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.025em; }
+.login-header h1 { color: var(--primary); margin-bottom: 0.35rem; font-size: 1.55rem; font-weight: 700; letter-spacing: -0.025em; }
 .login-header p { color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.75rem; }
 
 .login-error-msg {
@@ -123,7 +129,7 @@ body { background-color: var(--bg); color: var(--text); line-height: 1.6; min-he
 
 /* ---------------- NAVBAR ---------------- */
 .navbar {
-    background-color: var(--primary);
+    background: linear-gradient(90deg, var(--primary) 0%, var(--primary-soft) 100%);
     color: white;
     padding: 1rem 2rem;
     display: flex;
@@ -133,28 +139,30 @@ body { background-color: var(--bg); color: var(--text); line-height: 1.6; min-he
     position: sticky;
     top: 0;
     z-index: 100;
+    border-bottom: 3px solid var(--gold);
 }
-.nav-brand { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 1.15rem; letter-spacing: -0.02em; }
+.nav-brand { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 1.15rem; letter-spacing: -0.02em; }
 
 .nav-logo {
-    height: 1.8rem;
-    width: 1.8rem;
+    height: 2rem;
+    width: 2rem;
     object-fit: contain;
-    border-radius: 4px;
+    border-radius: 6px;
+    box-shadow: 0 0 0 2px rgba(242, 169, 0, 0.35);
 }
 
 .nav-controls { display: flex; align-items: center; gap: 16px; }
 
 .role-badge {
-    padding: 6px 12px;
+    padding: 6px 14px;
     border-radius: 20px;
-    font-size: 0.725rem;
+    font-size: 0.7rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
 }
-.role-badge.admin { background-color: #0284c7; color: white; }
+.role-badge.admin { background-color: var(--gold); color: #3A2600; }
 .role-badge.user { background-color: var(--success); color: white; }
 
 /* ---------------- CONTAINER & DASHBOARD LAYOUT ---------------- */
@@ -166,11 +174,12 @@ body { background-color: var(--bg); color: var(--text); line-height: 1.6; min-he
     align-items: center;
     margin-bottom: 2rem;
     gap: 1rem;
-    background: white;
+    background: var(--card-bg);
     padding: 1.5rem 2rem;
-    border-radius: 12px;
+    border-radius: var(--radius);
     box-shadow: var(--shadow-sm);
     border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
 }
 .page-header h1 { font-size: 1.65rem; color: var(--primary); font-weight: 700; letter-spacing: -0.025em; }
 .page-header p { color: var(--text-muted); font-size: 0.9rem; margin-top: 2px; }
@@ -194,7 +203,7 @@ body { background-color: var(--bg); color: var(--text); line-height: 1.6; min-he
 .btn-primary { background-color: var(--accent); color: white; }
 .btn-primary:hover { background-color: var(--accent-hover); }
 .btn-success { background-color: var(--success); color: white; }
-.btn-success:hover { background-color: #047857; }
+.btn-success:hover { background-color: #0b7f58; }
 .btn-danger { background-color: var(--danger); color: white; }
 .btn-danger:hover { background-color: #b91c1c; }
 .btn-secondary { background-color: #ffffff; color: var(--text); border-color: var(--border); }
@@ -213,67 +222,67 @@ button, .btn, .btn-icon, .password-toggle-btn {
 }
 
 /* ---------------- CARDS & TABLES ---------------- */
-.card { 
-    background: var(--card-bg); 
-    border-radius: 12px; 
-    border: 1px solid var(--border); 
-    overflow: hidden; 
+.card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    overflow: hidden;
     box-shadow: var(--shadow-sm);
     transition: box-shadow 0.3s ease;
     min-width: 0;
 }
 .card:hover { box-shadow: var(--shadow-md); }
-.card-header { background-color: #fafbfc; padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); }
+.card-header { background: linear-gradient(90deg, #F8FAFD 0%, #ffffff 100%); padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); }
 .card-header h2 { font-size: 1.1rem; color: var(--primary); display: flex; align-items: center; gap: 10px; font-weight: 700; }
-.card-header h2 i { color: var(--accent); }
+.card-header h2 i { color: var(--gold-dark); }
 
 .table-container { width: 100%; overflow-x: visible; }
 table { width: 100%; border-collapse: collapse; text-align: left; }
 th, td { padding: 12px 1.5rem; border-bottom: 1px solid var(--border); font-size: 0.875rem; }
-th { background-color: #fafbfc; color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.08em; }
+th { background-color: #F8FAFD; color: var(--text-muted); font-weight: 700; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.08em; }
 tr { transition: background-color 0.15s ease; }
-tr:hover { background-color: rgba(248, 250, 252, 0.8); }
+tr:hover { background-color: rgba(11, 95, 224, 0.035); }
 tr:last-child td { border-bottom: none; }
 .text-right { text-align: right; }
 .text-left { text-align: left; }
 
 /* ---------------- BADGES ---------------- */
 .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; letter-spacing: 0.02em; }
-.badge.confirmed { background-color: var(--success-bg); color: var(--success-text); border: 1px solid rgba(5, 150, 105, 0.2); }
-.badge.vacant { background-color: #fef3c7; color: #92400e; border: 1px solid rgba(217, 119, 6, 0.2); }
+.badge.confirmed { background-color: var(--success-bg); color: var(--success-text); border: 1px solid rgba(14, 154, 108, 0.2); }
+.badge.vacant { background-color: var(--gold-bg); color: var(--gold-text); border: 1px solid rgba(242, 169, 0, 0.3); }
 
 /* ---------------- MOBILE-OPTIMIZED MODALS ---------------- */
 .modal {
-    display: none; 
-    position: fixed; 
-    z-index: 1000; 
-    left: 0; 
-    top: 0; 
-    width: 100%; 
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
     height: 100%;
-    background-color: rgba(11, 15, 25, 0.85);
-    justify-content: center; 
-    align-items: center; 
+    background-color: rgba(10, 27, 61, 0.82);
+    justify-content: center;
+    align-items: center;
     padding: 1rem;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
 }
 
-.modal-content { 
-    background-color: white; 
-    border-radius: 14px; 
-    width: 100%; 
-    max-width: 500px; 
-    max-height: 90vh; 
+.modal-content {
+    background-color: white;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 500px;
+    max-height: 90vh;
     display: flex;
     flex-direction: column;
-    overflow-y: auto; 
-    box-shadow: var(--shadow-lg); 
-    border: 1px solid var(--border); 
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border);
     margin: auto;
 }
 .modal-large { max-width: 800px; }
-.modal-header { padding: 1.25rem 1.5rem; background-color: #fafbfc; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+.modal-header { padding: 1.25rem 1.5rem; background-color: #F8FAFD; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
 .modal-header h3 { font-size: 1.15rem; color: var(--primary); font-weight: 700; }
 .modal-body { padding: 1.5rem; overflow-y: auto; flex-grow: 1; }
 .close-btn { cursor: pointer; font-size: 1.5rem; color: var(--text-muted); line-height: 1; transition: color 0.15s; padding: 4px; }
@@ -287,7 +296,7 @@ form { padding: 1.5rem; }
 .form-group input:focus, .form-control:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
 .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 1.75rem; flex-shrink: 0; }
 
-.history-filter { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; background: #f8fafc; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border); }
+.history-filter { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; background: #F8FAFD; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border); }
 .history-filter input { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); font-size: 0.9rem; background: white; }
 
 body.role-user .admin-only { display: none !important; }
@@ -337,7 +346,7 @@ body.role-admin .user-only { display: none !important; }
     table th:nth-child(1), table td:nth-child(1) { width: 28%; font-weight: 600; }
     table th:nth-child(2), table td:nth-child(2) { width: 34%; }
     table th:nth-child(3), table td:nth-child(3) { width: 21%; }
-    
+
     .role-admin td.admin-only,
     .role-admin th.admin-only {
         width: 17%;
