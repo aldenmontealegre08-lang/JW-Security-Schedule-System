@@ -44,24 +44,24 @@
             <div class="login-header">
                 <img src="JW1.png" alt="JW Logo" class="login-logo">
                 <h1>Security Portal</h1>
-                <p>Authenticate to access operations network</p>
+                <p>Authenticate to access the portal</p>
             </div>
             <form id="loginForm" onsubmit="handleLogin(event)">
                 <div class="form-group text-left">
                     <label for="usernameInput">Username ID</label>
-                    <input type="text" id="usernameInput" placeholder="Enter operator ID" required autocomplete="username">
+                    <input type="text" id="usernameInput" placeholder="Input user" required autocomplete="username">
                 </div>
                 <div class="form-group text-left">
                     <label for="passwordInput">Secure Password</label>
                     <div class="password-wrapper">
-                        <input type="password" id="passwordInput" placeholder="••••••••" required autocomplete="current-password">
+                        <input type="password" id="passwordInput" placeholder="Input password user123" required autocomplete="current-password">
                         <button type="button" id="togglePasswordBtn" class="password-toggle-btn" onclick="togglePasswordVisibility()" aria-label="Toggle password visibility">
                             <i class="fa-solid fa-eye" id="togglePasswordIcon"></i>
                         </button>
                     </div>
                 </div>
                 <div id="loginError" class="login-error-msg"></div>
-                <button type="submit" class="btn btn-primary btn-block">Authenticate Session</button>
+                <button type="submit" class="btn btn-primary btn-block">Access Portal</button>
             </form>
         </div>
     </div>

@@ -247,7 +247,11 @@ function listenToFirestore() {
             schedules.push(doc.data());
         });
 
+        // SORTED BY FACILITY FIRST (KINGDOM HALL = 1, BUNK HOUSE = 2), THEN CHRONOLOGICALLY BY TIME
         schedules.sort((a, b) => {
+            if (a.facility_id !== b.facility_id) {
+                return a.facility_id - b.facility_id;
+            }
             const timeA = getStartTimeInMinutes(a.time_slot);
             const timeB = getStartTimeInMinutes(b.time_slot);
             return timeA - timeB;
@@ -352,7 +356,12 @@ function fetchHistoryForSelectedDate() {
         const data = doc.data();
         let records = data.records || [];
 
-        records.sort((a, b) => getStartTimeInMinutes(a.time_slot) - getStartTimeInMinutes(b.time_slot));
+        records.sort((a, b) => {
+            if (a.facility_id !== b.facility_id) {
+                return a.facility_id - b.facility_id;
+            }
+            return getStartTimeInMinutes(a.time_slot) - getStartTimeInMinutes(b.time_slot);
+        });
 
         khBody.innerHTML = '';
         bunkBody.innerHTML = '';
@@ -388,7 +397,7 @@ function fetchHistoryForSelectedDate() {
     });
 }
 
-// --- USER FORM SUBMISSION ---
+// --- USER FORM SUBMISSION WITH GROUPED OPTGROUPS ---
 function openVolunteerFormModal() {
     const timeSlotSelect = document.getElementById('formTimeSlotSelect');
     if (!timeSlotSelect) return;
@@ -398,13 +407,28 @@ function openVolunteerFormModal() {
     if (schedules.length === 0) {
         timeSlotSelect.innerHTML = '<option disabled selected>No time slots available</option>';
     } else {
+        // Group items visually using <optgroup> headers
+        const khGroup = document.createElement('optgroup');
+        khGroup.label = "Kingdom Hall Security";
+
+        const bunkGroup = document.createElement('optgroup');
+        bunkGroup.label = "Bunk House Security";
+
         schedules.forEach(slot => {
             const facilityName = slot.facility_id === 1 ? 'Kingdom Hall' : 'Bunk House';
             const opt = document.createElement('option');
             opt.value = slot.id;
             opt.textContent = `${facilityName} — ${slot.time_slot}`;
-            timeSlotSelect.appendChild(opt);
+
+            if (slot.facility_id === 1) {
+                khGroup.appendChild(opt);
+            } else {
+                bunkGroup.appendChild(opt);
+            }
         });
+
+        if (khGroup.children.length > 0) timeSlotSelect.appendChild(khGroup);
+        if (bunkGroup.children.length > 0) timeSlotSelect.appendChild(bunkGroup);
     }
 
     document.getElementById('shiftSubmissionForm').reset();
