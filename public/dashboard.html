@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- STRICT CACHE CONTROL[cite: 14] -->
+    <!-- STRICT CACHE CONTROL -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -17,14 +17,14 @@
     <link rel="icon" type="image/png" href="JW2.png">
     <meta name="theme-color" content="#0b0f19">
 
-    <!-- INSTANT AUTH GUARD[cite: 14] -->
+    <!-- INSTANT AUTH GUARD -->
     <script>
         if (!sessionStorage.getItem('userRole')) {
             window.location.replace("index.html");
         }
     </script>
 
-    <!-- Google Fonts for Enterprise Typography[cite: 14] -->
+    <!-- Google Fonts for Enterprise Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -32,13 +32,13 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Firebase App & Firestore SDKs[cite: 14] -->
+    <!-- Firebase App & Firestore SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 </head>
 <body style="display: none;">
 
-    <!-- ENTERPRISE NAVBAR[cite: 14] -->
+    <!-- ENTERPRISE NAVBAR -->
     <header class="navbar">
         <div class="nav-brand">
             <img src="JW1.png" alt="JW Logo" class="nav-logo">
@@ -52,7 +52,7 @@
 
     <main class="container">
         
-        <!-- PAGE HEADER & ENTERPRISE ACTIONS[cite: 14] -->
+        <!-- PAGE HEADER & ENTERPRISE ACTIONS -->
         <section class="page-header">
             <div>
                 <h1>Security Shifting Operations</h1>
@@ -81,7 +81,7 @@
             </div>
         </section>
 
-        <!-- FACILITIES GRID[cite: 14] -->
+        <!-- FACILITIES GRID -->
         <div class="facility-grid">
             <!-- Kingdom Hall Card -->
             <div class="card">
@@ -125,7 +125,7 @@
         </div>
     </main>
 
-    <!-- USER FORM MODAL[cite: 14] -->
+    <!-- USER FORM MODAL -->
     <div id="volunteerFormModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -136,7 +136,7 @@
                 <div class="form-group text-left">
                     <label for="volunteerFullName">Full Name</label>
                     <input type="text" id="volunteerFullName" placeholder="e.g., Juan Dela Cruz" required>
-                    <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 4px; display: block;">Maximum capacity is 4 volunteers per slot.</small>
+                    <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 4px; display: block;">Maximum capacity is 6 volunteers per slot.</small>
                 </div>
                 <div class="form-group text-left">
                     <label for="formTimeSlotSelect">Facility & Time Slot</label>
@@ -150,7 +150,7 @@
         </div>
     </div>
 
-    <!-- ADMIN CRUD MODAL[cite: 14] -->
+    <!-- ADMIN CRUD MODAL -->
     <div id="adminCrudModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -189,7 +189,7 @@
         </div>
     </div>
 
-    <!-- HISTORY AUDIT LOG MODAL[cite: 14] -->
+    <!-- HISTORY AUDIT LOG MODAL -->
     <div id="historyModal" class="modal">
         <div class="modal-content modal-large">
             <div class="modal-header">
