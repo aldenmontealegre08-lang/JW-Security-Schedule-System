@@ -15,7 +15,8 @@ const db = firebase.firestore();
 
 let schedules = [];
 let currentRole = sessionStorage.getItem('userRole');
-const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+let selectedDashboardDate = getGMT8DateString();
+let activeFirestoreUnsubscribe = null;
 const MAX_VOLUNTEERS_PER_SLOT = 6;
 
 // --- SECURITY HELPER: XSS SANITIZATION ---
@@ -86,7 +87,11 @@ function evaluateAccessControl() {
 
 document.addEventListener('DOMContentLoaded', () => {
     if (evaluateAccessControl() && document.getElementById('khTableBody')) {
-        initDatabase();
+        const dateInput = document.getElementById('dashboardDateSelect');
+        if (dateInput) {
+            dateInput.value = selectedDashboardDate;
+        }
+        initDatabaseForDate(selectedDashboardDate);
     }
 });
 
@@ -128,7 +133,7 @@ function handleLogout() {
     window.location.replace('index.html');
 }
 
-// --- PASSWORD VISIBILITY TOGGLE (MOBILE OPTIMIZED) ---
+// --- PASSWORD VISIBILITY TOGGLE ---
 function togglePasswordVisibility() {
     const passwordInput = document.getElementById('passwordInput');
     const toggleIcon = document.getElementById('togglePasswordIcon');
@@ -154,9 +159,7 @@ function getGMT8DateString(dateObj = new Date()) {
     return new Intl.DateTimeFormat('en-CA', options).format(dateObj);
 }
 
-function saveDailyLog() {
-    const todayStr = getGMT8DateString();
-    
+function saveDailyLog(targetDate = selectedDashboardDate) {
     const logData = schedules.map(slot => ({
         id: slot.id,
         facility_id: slot.facility_id,
@@ -166,51 +169,33 @@ function saveDailyLog() {
         status: slot.status
     }));
 
-    return db.collection("daily_logs").doc(todayStr).set({
-        date: todayStr,
+    return db.collection("daily_logs").doc(targetDate).set({
+        date: targetDate,
         timezone: "GMT+8",
         last_updated: Date.now(),
         records: logData
     }, { merge: true });
 }
 
-function checkAndAutoResetSchedules(snapshot) {
-    const now = Date.now();
-    const batch = db.batch();
-    let hasResets = false;
-
-    snapshot.forEach((doc) => {
-        const data = doc.data();
-        if (data.status === 'Confirmed' && data.last_updated) {
-            if (now - data.last_updated >= TWENTY_FOUR_HOURS) {
-                const docRef = db.collection("schedules").doc(doc.id);
-                batch.update(docRef, {
-                    volunteer_names: '',
-                    status: 'Vacant',
-                    last_updated: null
-                });
-                hasResets = true;
-            }
-        }
-    });
-
-    if (hasResets) {
-        batch.commit().catch(console.error);
-    }
+// --- DATE SELECTION & INITIALIZATION ---
+function handleDashboardDateChange() {
+    const dateInput = document.getElementById('dashboardDateSelect');
+    if (!dateInput || !dateInput.value) return;
+    selectedDashboardDate = dateInput.value;
+    initDatabaseForDate(selectedDashboardDate);
 }
 
-// --- INITIALIZE & REALTIME LISTENERS ---
-function initDatabase() {
-    db.collection("schedules").get().then((snapshot) => {
+function initDatabaseForDate(targetDate) {
+    db.collection("schedules").where("date", "==", targetDate).get().then((snapshot) => {
         if (snapshot.empty) {
-            seedDefaultDatabase();
+            seedDatabaseForDate(targetDate);
         } else {
-            listenToFirestore();
+            listenToFirestore(targetDate);
         }
     });
 }
 
-function seedDefaultDatabase() {
+function seedDatabaseForDate(targetDate) {
     const defaultSlots = [
         { id: 1, facility_id: 1, time_slot: '12:00am - 6:00am', volunteer_names: '', status: 'Vacant', last_updated: null },
         { id: 2, facility_id: 1, time_slot: '6:00am - 9:00am', volunteer_names: '', status: 'Vacant', last_updated: null },
@@ -231,36 +216,40 @@ function seedDefaultDatabase() {
 
     const batch = db.batch();
     defaultSlots.forEach(slot => {
-        const docRef = db.collection("schedules").doc(slot.id.toString());
-        batch.set(docRef, slot);
+        const docKey = `${targetDate}_${slot.id}`;
+        const docRef = db.collection("schedules").doc(docKey);
+        batch.set(docRef, { ...slot, date: targetDate });
     });
     batch.commit().then(() => {
-        listenToFirestore();
+        listenToFirestore(targetDate);
     });
 }
 
-function listenToFirestore() {
-    db.collection("schedules").onSnapshot((snapshot) => {
-        checkAndAutoResetSchedules(snapshot);
+function listenToFirestore(targetDate) {
+    if (activeFirestoreUnsubscribe) {
+        activeFirestoreUnsubscribe();
+    }
 
-        schedules = [];
-        snapshot.forEach((doc) => {
-            schedules.push(doc.data());
+    activeFirestoreUnsubscribe = db.collection("schedules")
+        .where("date", "==", targetDate)
+        .onSnapshot((snapshot) => {
+            schedules = [];
+            snapshot.forEach((doc) => {
+                schedules.push(doc.data());
+            });
+
+            schedules.sort((a, b) => {
+                if (a.facility_id !== b.facility_id) {
+                    return a.facility_id - b.facility_id;
+                }
+                const timeA = getStartTimeInMinutes(a.time_slot);
+                const timeB = getStartTimeInMinutes(b.time_slot);
+                return timeA - timeB;
+            });
+
+            renderTables();
+            saveDailyLog(targetDate);
         });
-
-        // SORTED BY FACILITY FIRST (KINGDOM HALL = 1, BUNK HOUSE = 2), THEN CHRONOLOGICALLY BY TIME
-        schedules.sort((a, b) => {
-            if (a.facility_id !== b.facility_id) {
-                return a.facility_id - b.facility_id;
-            }
-            const timeA = getStartTimeInMinutes(a.time_slot);
-            const timeB = getStartTimeInMinutes(b.time_slot);
-            return timeA - timeB;
-        });
-
-        renderTables();
-        saveDailyLog();
-    });
 }
 
 // --- RENDER TABLES ---
@@ -298,15 +287,15 @@ function renderTables() {
     });
 }
 
-// --- RESET ALL SCHEDULES AND RESTORE DEFAULT SEQUENTIAL SLOTS ---
+// --- RESET SCHEDULES FOR CURRENTLY SELECTED DATE ---
 function resetAllSchedules() {
     if (currentRole !== 'admin') return;
 
-    const confirmReset = confirm("Are you sure you want to RESET ALL SCHEDULES?\n\nThis will restore both facilities to sequential order (12:00am - 11:59pm) and archive today's log.");
+    const confirmReset = confirm(`Are you sure you want to RESET ALL SCHEDULES for ${selectedDashboardDate}?\n\nThis will restore sequential order and clear volunteer assignments for this date.`);
     if (!confirmReset) return;
 
-    saveDailyLog().then(() => {
-        return db.collection("schedules").get();
+    saveDailyLog(selectedDashboardDate).then(() => {
+        return db.collection("schedules").where("date", "==", selectedDashboardDate).get();
     }).then((snapshot) => {
         const batch = db.batch();
         snapshot.forEach((doc) => {
@@ -314,8 +303,8 @@ function resetAllSchedules() {
         });
         return batch.commit();
     }).then(() => {
-        seedDefaultDatabase();
-        alert("Schedules have been reset and restored to proper sequential order!");
+        seedDatabaseForDate(selectedDashboardDate);
+        alert(`Schedules for ${selectedDashboardDate} have been reset successfully!`);
     }).catch((error) => {
         alert("Error during reset: " + error.message);
     });
@@ -327,7 +316,7 @@ function openHistoryModal() {
 
     const datePicker = document.getElementById('historyDateSelect');
     if (datePicker) {
-        datePicker.value = getGMT8DateString();
+        datePicker.value = selectedDashboardDate;
         fetchHistoryForSelectedDate();
     }
     document.getElementById('historyModal').style.display = 'flex';
@@ -398,23 +387,67 @@ function fetchHistoryForSelectedDate() {
     });
 }
 
-// --- USER FORM SUBMISSION WITH GROUPED OPTGROUPS & CAPACITY DISPLAY ---
+// --- USER FORM SUBMISSION WITH DATE PICKER & TIME SLOTS ---
 function openVolunteerFormModal() {
-    const timeSlotSelect = document.getElementById('formTimeSlotSelect');
-    if (!timeSlotSelect) return;
-    
-    timeSlotSelect.innerHTML = '';
+    const volunteerDateInput = document.getElementById('volunteerShiftDate');
+    if (volunteerDateInput) {
+        volunteerDateInput.value = selectedDashboardDate;
+    }
+    updateVolunteerModalSlots();
+    document.getElementById('shiftSubmissionForm').reset();
+    if (volunteerDateInput) {
+        volunteerDateInput.value = selectedDashboardDate;
+    }
+    document.getElementById('volunteerFormModal').style.display = 'flex';
+}
 
-    if (schedules.length === 0) {
-        timeSlotSelect.innerHTML = '<option disabled selected>No time slots available</option>';
-    } else {
+function updateVolunteerModalSlots() {
+    const volunteerDateInput = document.getElementById('volunteerShiftDate');
+    const timeSlotSelect = document.getElementById('formTimeSlotSelect');
+    if (!volunteerDateInput || !timeSlotSelect) return;
+
+    const targetDate = volunteerDateInput.value;
+    if (!targetDate) return;
+
+    timeSlotSelect.innerHTML = '<option disabled selected>Loading time slots...</option>';
+
+    db.collection("schedules").where("date", "==", targetDate).get().then((snapshot) => {
+        let dateSchedules = [];
+
+        if (snapshot.empty) {
+            // Seed defaults virtually for dropdown selection
+            dateSchedules = [
+                { id: 1, facility_id: 1, time_slot: '12:00am - 6:00am', volunteer_names: '' },
+                { id: 2, facility_id: 1, time_slot: '6:00am - 9:00am', volunteer_names: '' },
+                { id: 3, facility_id: 1, time_slot: '9:00am - 12:00pm', volunteer_names: '' },
+                { id: 4, facility_id: 1, time_slot: '12:00pm - 3:00pm', volunteer_names: '' },
+                { id: 5, facility_id: 1, time_slot: '3:00pm - 6:00pm', volunteer_names: '' },
+                { id: 6, facility_id: 1, time_slot: '6:00pm - 9:00pm', volunteer_names: '' },
+                { id: 7, facility_id: 1, time_slot: '9:00pm - 11:59pm', volunteer_names: '' },
+                { id: 8, facility_id: 2, time_slot: '12:00am - 6:00am', volunteer_names: '' },
+                { id: 9, facility_id: 2, time_slot: '6:00am - 9:00am', volunteer_names: '' },
+                { id: 10, facility_id: 2, time_slot: '9:00am - 12:00pm', volunteer_names: '' },
+                { id: 11, facility_id: 2, time_slot: '12:00pm - 3:00pm', volunteer_names: '' },
+                { id: 12, facility_id: 2, time_slot: '3:00pm - 6:00pm', volunteer_names: '' },
+                { id: 13, facility_id: 2, time_slot: '6:00pm - 9:00pm', volunteer_names: '' },
+                { id: 14, facility_id: 2, time_slot: '9:00pm - 11:59pm', volunteer_names: '' }
+            ];
+        } else {
+            snapshot.forEach(doc => dateSchedules.push(doc.data()));
+        }
+
+        dateSchedules.sort((a, b) => {
+            if (a.facility_id !== b.facility_id) return a.facility_id - b.facility_id;
+            return getStartTimeInMinutes(a.time_slot) - getStartTimeInMinutes(b.time_slot);
+        });
+
+        timeSlotSelect.innerHTML = '';
         const khGroup = document.createElement('optgroup');
         khGroup.label = "Kingdom Hall Security";
-
         const bunkGroup = document.createElement('optgroup');
         bunkGroup.label = "Bunk House Security";
 
-        schedules.forEach(slot => {
+        dateSchedules.forEach(slot => {
             const facilityName = slot.facility_id === 1 ? 'Kingdom Hall' : 'Bunk House';
             const volCount = slot.volunteer_names 
                 ? slot.volunteer_names.split(',').map(n => n.trim()).filter(n => n.length > 0).length 
@@ -424,23 +457,15 @@ function openVolunteerFormModal() {
             const opt = document.createElement('option');
             opt.value = slot.id;
             opt.textContent = `${facilityName} — ${slot.time_slot} (${volCount}/${MAX_VOLUNTEERS_PER_SLOT} Volunteers)${isFull ? ' [FULL]' : ''}`;
-            if (isFull) {
-                opt.disabled = true;
-            }
+            if (isFull) opt.disabled = true;
 
-            if (slot.facility_id === 1) {
-                khGroup.appendChild(opt);
-            } else {
-                bunkGroup.appendChild(opt);
-            }
+            if (slot.facility_id === 1) khGroup.appendChild(opt);
+            else bunkGroup.appendChild(opt);
         });
 
         if (khGroup.children.length > 0) timeSlotSelect.appendChild(khGroup);
         if (bunkGroup.children.length > 0) timeSlotSelect.appendChild(bunkGroup);
-    }
-
-    document.getElementById('shiftSubmissionForm').reset();
-    document.getElementById('volunteerFormModal').style.display = 'flex';
+    });
 }
 
 function closeVolunteerFormModal() {
@@ -450,18 +475,43 @@ function closeVolunteerFormModal() {
 function submitVolunteerShift(event) {
     event.preventDefault();
     const newVolunteerName = document.getElementById('volunteerFullName').value.trim();
+    const targetDate = document.getElementById('volunteerShiftDate').value;
     const slotId = parseInt(document.getElementById('formTimeSlotSelect').value);
 
     if (!newVolunteerName) {
         alert("Please enter your name.");
         return;
     }
+    if (!targetDate) {
+        alert("Please select a volunteering date.");
+        return;
+    }
 
-    const targetSlot = schedules.find(s => s.id === slotId);
-    if (targetSlot) {
-        let currentVolunteers = targetSlot.volunteer_names 
-            ? targetSlot.volunteer_names.split(',').map(n => n.trim()).filter(n => n.length > 0)
-            : [];
+    const docKey = `${targetDate}_${slotId}`;
+    const slotRef = db.collection("schedules").doc(docKey);
+
+    slotRef.get().then((doc) => {
+        let currentVolunteers = [];
+        let facilityId = slotId <= 7 ? 1 : 2;
+        let timeSlotStr = "";
+
+        if (doc.exists) {
+            const data = doc.data();
+            facilityId = data.facility_id;
+            timeSlotStr = data.time_slot;
+            currentVolunteers = data.volunteer_names 
+                ? data.volunteer_names.split(',').map(n => n.trim()).filter(n => n.length > 0)
+                : [];
+        } else {
+            // Find standard time slot definition
+            const defaultTimeSlots = {
+                1: '12:00am - 6:00am', 2: '6:00am - 9:00am', 3: '9:00am - 12:00pm', 4: '12:00pm - 3:00pm',
+                5: '3:00pm - 6:00pm', 6: '6:00pm - 9:00pm', 7: '9:00pm - 11:59pm',
+                8: '12:00am - 6:00am', 9: '6:00am - 9:00am', 10: '9:00am - 12:00pm', 11: '12:00pm - 3:00pm',
+                12: '3:00pm - 6:00pm', 13: '6:00pm - 9:00pm', 14: '9:00pm - 11:59pm'
+            };
+            timeSlotStr = defaultTimeSlots[slotId] || 'Custom Slot';
+        }
 
         if (currentVolunteers.length >= MAX_VOLUNTEERS_PER_SLOT) {
             alert(`This time slot has already reached the maximum limit of ${MAX_VOLUNTEERS_PER_SLOT} volunteers.`);
@@ -469,24 +519,34 @@ function submitVolunteerShift(event) {
         }
 
         if (currentVolunteers.some(name => name.toLowerCase() === newVolunteerName.toLowerCase())) {
-            alert("This name is already registered for this time slot.");
+            alert("This name is already registered for this time slot on the selected date.");
             return;
         }
 
         currentVolunteers.push(newVolunteerName);
         const updatedNames = currentVolunteers.join(', ');
 
-        db.collection("schedules").doc(slotId.toString()).update({
+        return slotRef.set({
+            id: slotId,
+            facility_id: facilityId,
+            date: targetDate,
+            time_slot: timeSlotStr,
             volunteer_names: updatedNames,
             status: 'Confirmed',
             last_updated: Date.now()
-        }).then(() => {
-            alert("Success! Your name has been added to the schedule shift.");
+        }, { merge: true }).then(() => {
+            alert(`Success! You have been scheduled to volunteer on ${targetDate}.`);
             closeVolunteerFormModal();
-        }).catch((error) => {
-            alert("Error updating schedule: " + error.message);
+            // Switch dashboard to match booked date for instant visual feedback
+            const dashDatePicker = document.getElementById('dashboardDateSelect');
+            if (dashDatePicker && dashDatePicker.value !== targetDate) {
+                dashDatePicker.value = targetDate;
+                handleDashboardDateChange();
+            }
         });
-    }
+    }).catch((error) => {
+        alert("Error updating schedule: " + error.message);
+    });
 }
 
 // --- ADMIN CRUD OPERATIONS ---
@@ -537,17 +597,19 @@ function handleAdminFormSubmit(event) {
     }
 
     let slotId = id ? parseInt(id) : (schedules.length > 0 ? Math.max(...schedules.map(s => s.id)) + 1 : 1);
+    const docKey = `${selectedDashboardDate}_${slotId}`;
 
     const slotData = {
         id: slotId,
         facility_id: facility_id,
+        date: selectedDashboardDate,
         time_slot: time_slot,
         volunteer_names: volunteer_names,
         status: status,
         last_updated: status === 'Confirmed' ? Date.now() : null
     };
 
-    db.collection("schedules").doc(slotId.toString()).set(slotData).then(() => {
+    db.collection("schedules").doc(docKey).set(slotData).then(() => {
         closeAdminModal();
     }).catch((error) => {
         alert("Error saving record: " + error.message);
@@ -557,7 +619,8 @@ function handleAdminFormSubmit(event) {
 function deleteRecord(id) {
     if (currentRole !== 'admin') return;
     if (confirm("Are you sure you want to clear this volunteer assignment and set the slot back to Vacant?")) {
-        db.collection("schedules").doc(id.toString()).update({
+        const docKey = `${selectedDashboardDate}_${id}`;
+        db.collection("schedules").doc(docKey).update({
             volunteer_names: '',
             status: 'Vacant',
             last_updated: null
@@ -589,6 +652,8 @@ window.handleLogin = handleLogin;
 window.handleLogout = handleLogout;
 window.togglePasswordVisibility = togglePasswordVisibility;
 window.printDailySchedule = printDailySchedule;
+window.handleDashboardDateChange = handleDashboardDateChange;
+window.updateVolunteerModalSlots = updateVolunteerModalSlots;
 window.openVolunteerFormModal = openVolunteerFormModal;
 window.closeVolunteerFormModal = closeVolunteerFormModal;
 window.submitVolunteerShift = submitVolunteerShift;
