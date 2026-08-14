@@ -359,3 +359,54 @@ body.role-admin .user-only { display: none !important; }
     .form-actions { flex-direction: column-reverse; gap: 8px; }
     .form-actions .btn { width: 100%; justify-content: center; }
 }
+
+/* ---------------- PRINT MEDIA STYLES ---------------- */
+@media print {
+    body {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+    }
+
+    .navbar,
+    .header-actions,
+    .admin-only,
+    .modal,
+    .btn,
+    .btn-icon {
+        display: none !important;
+    }
+
+    .container {
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .page-header {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 0 1rem 0 !important;
+    }
+
+    .facility-grid {
+        grid-template-columns: 1fr !important;
+        gap: 1.5rem !important;
+    }
+
+    .card {
+        border: 1px solid #ccc !important;
+        box-shadow: none !important;
+        break-inside: avoid;
+    }
+
+    table th, table td {
+        padding: 8px 12px !important;
+        border-bottom: 1px solid #ddd !important;
+    }
+
+    .badge {
+        border: 1px solid #999 !important;
+        color: #000 !important;
+        background: transparent !important;
+    }
+}

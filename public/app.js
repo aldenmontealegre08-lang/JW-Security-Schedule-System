@@ -16,6 +16,7 @@ const db = firebase.firestore();
 let schedules = [];
 let currentRole = sessionStorage.getItem('userRole');
 const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+const MAX_VOLUNTEERS_PER_SLOT = 6;
 
 // --- SECURITY HELPER: XSS SANITIZATION ---
 function escapeHTML(str) {
@@ -397,7 +398,7 @@ function fetchHistoryForSelectedDate() {
     });
 }
 
-// --- USER FORM SUBMISSION WITH GROUPED OPTGROUPS ---
+// --- USER FORM SUBMISSION WITH GROUPED OPTGROUPS & CAPACITY DISPLAY ---
 function openVolunteerFormModal() {
     const timeSlotSelect = document.getElementById('formTimeSlotSelect');
     if (!timeSlotSelect) return;
@@ -407,7 +408,6 @@ function openVolunteerFormModal() {
     if (schedules.length === 0) {
         timeSlotSelect.innerHTML = '<option disabled selected>No time slots available</option>';
     } else {
-        // Group items visually using <optgroup> headers
         const khGroup = document.createElement('optgroup');
         khGroup.label = "Kingdom Hall Security";
 
@@ -416,9 +416,17 @@ function openVolunteerFormModal() {
 
         schedules.forEach(slot => {
             const facilityName = slot.facility_id === 1 ? 'Kingdom Hall' : 'Bunk House';
+            const volCount = slot.volunteer_names 
+                ? slot.volunteer_names.split(',').map(n => n.trim()).filter(n => n.length > 0).length 
+                : 0;
+            const isFull = volCount >= MAX_VOLUNTEERS_PER_SLOT;
+
             const opt = document.createElement('option');
             opt.value = slot.id;
-            opt.textContent = `${facilityName} — ${slot.time_slot}`;
+            opt.textContent = `${facilityName} — ${slot.time_slot} (${volCount}/${MAX_VOLUNTEERS_PER_SLOT} Volunteers)${isFull ? ' [FULL]' : ''}`;
+            if (isFull) {
+                opt.disabled = true;
+            }
 
             if (slot.facility_id === 1) {
                 khGroup.appendChild(opt);
@@ -455,8 +463,8 @@ function submitVolunteerShift(event) {
             ? targetSlot.volunteer_names.split(',').map(n => n.trim()).filter(n => n.length > 0)
             : [];
 
-        if (currentVolunteers.length >= 6) {
-            alert("This time slot has already reached the maximum limit of 6 volunteers.");
+        if (currentVolunteers.length >= MAX_VOLUNTEERS_PER_SLOT) {
+            alert(`This time slot has already reached the maximum limit of ${MAX_VOLUNTEERS_PER_SLOT} volunteers.`);
             return;
         }
 

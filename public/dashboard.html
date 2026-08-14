@@ -160,22 +160,22 @@
             <form id="adminScheduleForm" onsubmit="handleAdminFormSubmit(event)">
                 <input type="hidden" id="slotId">
                 <div class="form-group text-left">
-                    <label>Facility Unit</label>
+                    <label for="adminFacilitySelect">Facility Unit</label>
                     <select id="adminFacilitySelect" class="form-control" required>
                         <option value="1">Kingdom Hall</option>
                         <option value="2">Bunk House</option>
                     </select>
                 </div>
                 <div class="form-group text-left">
-                    <label>Time Window</label>
+                    <label for="adminTimeSlotInput">Time Window</label>
                     <input type="text" id="adminTimeSlotInput" placeholder="e.g., 6:00pm - 9:00pm" required>
                 </div>
                 <div class="form-group text-left">
-                    <label>Assigned Volunteers</label>
+                    <label for="adminVolunteerInput">Assigned Volunteers</label>
                     <input type="text" id="adminVolunteerInput" placeholder="Comma-separated names">
                 </div>
                 <div class="form-group text-left">
-                    <label>Operational Status</label>
+                    <label for="adminStatusSelect">Operational Status</label>
                     <select id="adminStatusSelect" class="form-control" required>
                         <option value="Confirmed">Confirmed</option>
                         <option value="Vacant">Vacant</option>
