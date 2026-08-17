@@ -1,11 +1,11 @@
 :root {
-    /* --- BRAND PALETTE (derived from logo: deep-to-bright blue field + gold hard hat) --- */
-    --primary: #0A1B3D;          /* deep navy — navbar, headings */
+    /* --- BRAND PALETTE --- */
+    --primary: #0A1B3D;
     --primary-soft: #142A54;
-    --accent: #0B5FE0;            /* logo blue — primary actions */
+    --accent: #0B5FE0;
     --accent-hover: #1470FA;
     --accent-glow: rgba(11, 95, 224, 0.16);
-    --gold: #F2A900;              /* helmet gold — secondary accent / admin */
+    --gold: #F2A900;
     --gold-dark: #C98A00;
     --gold-bg: #FFF6E0;
     --gold-text: #8A5A00;
@@ -26,8 +26,28 @@
     --shadow-lg: 0 24px 48px -12px rgba(10, 27, 61, 0.35), 0 8px 16px -4px rgba(10, 27, 61, 0.12);
 }
 
+/* --- DARK MODE THEME OVERRIDES --- */
+body.dark-mode {
+    --bg: #0b0f19;
+    --card-bg: #111827;
+    --text: #f3f4f6;
+    --text-muted: #9ca3af;
+    --border: #1f2937;
+    --primary: #f3f4f6;
+    --primary-soft: #1f2937;
+    --gold-bg: #2d2305;
+    --gold-text: #fcd34d;
+    --success-bg: #064e3b;
+    --success-text: #6ee7b7;
+    --danger-bg: #7f1d1d;
+    --danger-text: #fca5a5;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 6px 16px -4px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 24px 48px -12px rgba(0, 0, 0, 0.6);
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
-body { background-color: var(--bg); color: var(--text); line-height: 1.6; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+body { background-color: var(--bg); color: var(--text); line-height: 1.6; min-height: 100vh; -webkit-font-smoothing: antialiased; transition: background-color 0.25s ease, color 0.25s ease; }
 
 /* ---------------- LOGIN PAGE STYLES ---------------- */
 .login-body {
@@ -38,12 +58,17 @@ body { background-color: var(--bg); color: var(--text); line-height: 1.6; min-he
     padding: 1rem;
 }
 
+body.dark-mode .login-body {
+    background: radial-gradient(circle at 30% 20%, #1e293b 0%, #0f172a 38%, #030712 100%);
+}
+
 .login-container {
     width: 100%;
     max-width: 420px;
 }
 
 .login-card {
+    position: relative;
     background: var(--card-bg);
     padding: 2.75rem 2.25rem;
     border-radius: 20px;
@@ -84,7 +109,7 @@ body { background-color: var(--bg); color: var(--text); line-height: 1.6; min-he
     width: 100%;
     border: 1px solid var(--border);
     border-radius: 8px;
-    background: #fff;
+    background: var(--card-bg);
     transition: all 0.2s ease;
     overflow: hidden;
 }
@@ -102,6 +127,7 @@ body { background-color: var(--bg); color: var(--text); line-height: 1.6; min-he
     padding: 0.65rem 0.875rem;
     background: transparent;
     font-size: 0.9rem;
+    color: var(--text);
 }
 
 .password-toggle-btn {
@@ -140,6 +166,11 @@ body { background-color: var(--bg); color: var(--text); line-height: 1.6; min-he
     z-index: 100;
     border-bottom: 3px solid var(--gold);
 }
+
+body.dark-mode .navbar {
+    background: linear-gradient(90deg, #0f172a 0%, #1e293b 100%);
+}
+
 .nav-brand { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 1.15rem; letter-spacing: -0.02em; }
 
 .nav-logo {
@@ -204,13 +235,13 @@ body { background-color: var(--bg); color: var(--text); line-height: 1.6; min-he
 .btn-success:hover { background-color: #0b7f58; }
 .btn-danger { background-color: var(--danger); color: white; }
 .btn-danger:hover { background-color: #b91c1c; }
-.btn-secondary { background-color: #ffffff; color: var(--text); border-color: var(--border); }
-.btn-secondary:hover { background-color: #f1f5f9; border-color: #cbd5e1; }
+.btn-secondary { background-color: var(--card-bg); color: var(--text); border-color: var(--border); }
+.btn-secondary:hover { background-color: var(--border); }
 .btn-block { width: 100%; justify-content: center; padding: 0.75rem; }
 .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.8rem; }
 
 .btn-icon { background: none; border: none; cursor: pointer; padding: 6px 10px; color: var(--text-muted); font-size: 0.95rem; border-radius: 6px; transition: background 0.15s, color 0.15s; }
-.btn-icon:hover { background-color: #f1f5f9; }
+.btn-icon:hover { background-color: var(--border); }
 .btn-icon.edit:hover { color: var(--accent); }
 .btn-icon.delete:hover { color: var(--danger); }
 
@@ -231,15 +262,18 @@ button, .btn, .btn-icon, .password-toggle-btn {
 }
 .card:hover { box-shadow: var(--shadow-md); }
 .card-header { background: linear-gradient(90deg, #F8FAFD 0%, #ffffff 100%); padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); }
+body.dark-mode .card-header { background: linear-gradient(90deg, #1f2937 0%, #111827 100%); }
 .card-header h2 { font-size: 1.1rem; color: var(--primary); display: flex; align-items: center; gap: 10px; font-weight: 700; }
 .card-header h2 i { color: var(--gold-dark); }
 
 .table-container { width: 100%; overflow-x: visible; }
 table { width: 100%; border-collapse: collapse; text-align: left; }
-th, td { padding: 12px 1.5rem; border-bottom: 1px solid var(--border); font-size: 0.875rem; }
+th, td { padding: 12px 1.5rem; border-bottom: 1px solid var(--border); font-size: 0.875rem; color: var(--text); }
 th { background-color: #F8FAFD; color: var(--text-muted); font-weight: 700; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.08em; }
+body.dark-mode th { background-color: #1f2937; }
 tr { transition: background-color 0.15s ease; }
 tr:hover { background-color: rgba(11, 95, 224, 0.035); }
+body.dark-mode tr:hover { background-color: rgba(255, 255, 255, 0.04); }
 tr:last-child td { border-bottom: none; }
 .text-right { text-align: right; }
 .text-left { text-align: left; }
@@ -266,8 +300,12 @@ tr:last-child td { border-bottom: none; }
     -webkit-overflow-scrolling: touch;
 }
 
+body.dark-mode .modal {
+    background-color: rgba(0, 0, 0, 0.85);
+}
+
 .modal-content {
-    background-color: white;
+    background-color: var(--card-bg);
     border-radius: 16px;
     width: 100%;
     max-width: 500px;
@@ -281,6 +319,7 @@ tr:last-child td { border-bottom: none; }
 }
 .modal-large { max-width: 800px; }
 .modal-header { padding: 1.25rem 1.5rem; background-color: #F8FAFD; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+body.dark-mode .modal-header { background-color: #1f2937; }
 .modal-header h3 { font-size: 1.15rem; color: var(--primary); font-weight: 700; }
 .modal-body { padding: 1.5rem; overflow-y: auto; flex-grow: 1; }
 .close-btn { cursor: pointer; font-size: 1.5rem; color: var(--text-muted); line-height: 1; transition: color 0.15s; padding: 4px; }
@@ -290,12 +329,13 @@ form { padding: 1.5rem; }
 .modal-body form { padding: 0; }
 .form-group { margin-bottom: 1.25rem; }
 .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--primary); }
-.form-group input, .form-control { width: 100%; padding: 0.65rem 0.875rem; border: 1px solid var(--border); border-radius: 8px; font-size: 0.9rem; outline: none; background: #fff; transition: all 0.2s; }
+.form-group input, .form-control { width: 100%; padding: 0.65rem 0.875rem; border: 1px solid var(--border); border-radius: 8px; font-size: 0.9rem; outline: none; background: var(--card-bg); color: var(--text); transition: all 0.2s; }
 .form-group input:focus, .form-control:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
 .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 1.75rem; flex-shrink: 0; }
 
 .history-filter { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; background: #F8FAFD; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border); }
-.history-filter input { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); font-size: 0.9rem; background: white; }
+body.dark-mode .history-filter { background: #1f2937; }
+.history-filter input { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); font-size: 0.9rem; background: var(--card-bg); color: var(--text); }
 
 body.role-user .admin-only { display: none !important; }
 body.role-admin .user-only { display: none !important; }
@@ -372,7 +412,8 @@ body.role-admin .user-only { display: none !important; }
     .admin-only,
     .modal,
     .btn,
-    .btn-icon {
+    .btn-icon,
+    .theme-toggle-btn {
         display: none !important;
     }
 

@@ -3,7 +3,7 @@ const firebaseConfig = {
     apiKey: "AIzaSyDky02aMkvBY1Imz7GJWawBu1MqLR5qyE",
     authDomain: "jw-security-schedule-system.firebaseapp.com",
     projectId: "jw-security-schedule-system",
-    storageBucket: "jw-security-schedule-system.appspot.com",
+    storageBucket: "jw-security-schedule-system.app手.com",
     messagingSenderId: "405577245994",
     appId: "1:405577245994:web:edf9c0415078b0803e2a53",
     measurementId: "G-TFBKBV3731"
@@ -18,6 +18,41 @@ let currentRole = sessionStorage.getItem('userRole');
 let selectedDashboardDate = getGMT8DateString();
 let activeFirestoreUnsubscribe = null;
 const MAX_VOLUNTEERS_PER_SLOT = 6;
+
+// --- DARK MODE THEME MANAGEMENT ---
+function initTheme() {
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+        document.body.classList.add('dark-mode');
+        updateThemeIcon(true);
+    } else {
+        document.body.classList.remove('dark-mode');
+        updateThemeIcon(false);
+    }
+}
+
+function toggleDarkMode() {
+    const isDark = document.body.classList.toggle('dark-mode');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    updateThemeIcon(isDark);
+}
+
+function updateThemeIcon(isDark) {
+    const icons = document.querySelectorAll('.theme-toggle-btn i');
+    icons.forEach(icon => {
+        if (isDark) {
+            icon.classList.remove('fa-moon');
+            icon.classList.add('fa-sun');
+        } else {
+            icon.classList.remove('fa-sun');
+            icon.classList.add('fa-moon');
+        }
+    });
+}
+
+// Initialize theme immediately
+initTheme();
 
 // --- SECURITY HELPER: XSS SANITIZATION ---
 function escapeHTML(str) {
@@ -86,6 +121,7 @@ function evaluateAccessControl() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    initTheme();
     if (evaluateAccessControl() && document.getElementById('khTableBody')) {
         const dateInput = document.getElementById('dashboardDateSelect');
         if (dateInput) {
@@ -267,7 +303,7 @@ function renderTables() {
         const badgeClass = item.status === 'Confirmed' ? 'confirmed' : 'vacant';
         const volunteerDisplay = item.volunteer_names 
             ? escapeHTML(item.volunteer_names) 
-            : '<span style="color: #94a3b8; font-style: italic;">Unassigned Slot</span>';
+            : '<span style="color: var(--text-muted); font-style: italic;">Unassigned Slot</span>';
 
         row.innerHTML = `
             <td>${escapeHTML(item.time_slot)}</td>
@@ -338,8 +374,8 @@ function fetchHistoryForSelectedDate() {
 
     db.collection("daily_logs").doc(selectedDate).get().then((doc) => {
         if (!doc.exists) {
-            khBody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #94a3b8;">No history recorded for this date.</td></tr>';
-            bunkBody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #94a3b8;">No history recorded for this date.</td></tr>';
+            khBody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">No history recorded for this date.</td></tr>';
+            bunkBody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">No history recorded for this date.</td></tr>';
             return;
         }
 
@@ -357,8 +393,8 @@ function fetchHistoryForSelectedDate() {
         bunkBody.innerHTML = '';
 
         if (records.length === 0) {
-            khBody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #94a3b8;">No shift records found.</td></tr>';
-            bunkBody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #94a3b8;">No shift records found.</td></tr>';
+            khBody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">No shift records found.</td></tr>';
+            bunkBody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">No shift records found.</td></tr>';
             return;
         }
 
@@ -367,7 +403,7 @@ function fetchHistoryForSelectedDate() {
             const badgeClass = item.status === 'Confirmed' ? 'confirmed' : 'vacant';
             const volunteerDisplay = item.volunteer_names 
                 ? escapeHTML(item.volunteer_names) 
-                : '<span style="color: #94a3b8; font-style: italic;">Unassigned Slot</span>';
+                : '<span style="color: var(--text-muted); font-style: italic;">Unassigned Slot</span>';
 
             row.innerHTML = `
                 <td><strong>${escapeHTML(item.time_slot)}</strong></td>
@@ -415,7 +451,6 @@ function updateVolunteerModalSlots() {
         let dateSchedules = [];
 
         if (snapshot.empty) {
-            // Seed defaults virtually for dropdown selection
             dateSchedules = [
                 { id: 1, facility_id: 1, time_slot: '12:00am - 6:00am', volunteer_names: '' },
                 { id: 2, facility_id: 1, time_slot: '6:00am - 9:00am', volunteer_names: '' },
@@ -503,7 +538,6 @@ function submitVolunteerShift(event) {
                 ? data.volunteer_names.split(',').map(n => n.trim()).filter(n => n.length > 0)
                 : [];
         } else {
-            // Find standard time slot definition
             const defaultTimeSlots = {
                 1: '12:00am - 6:00am', 2: '6:00am - 9:00am', 3: '9:00am - 12:00pm', 4: '12:00pm - 3:00pm',
                 5: '3:00pm - 6:00pm', 6: '6:00pm - 9:00pm', 7: '9:00pm - 11:59pm',
@@ -537,7 +571,6 @@ function submitVolunteerShift(event) {
         }, { merge: true }).then(() => {
             alert(`Success! You have been scheduled to volunteer on ${targetDate}.`);
             closeVolunteerFormModal();
-            // Switch dashboard to match booked date for instant visual feedback
             const dashDatePicker = document.getElementById('dashboardDateSelect');
             if (dashDatePicker && dashDatePicker.value !== targetDate) {
                 dashDatePicker.value = targetDate;
@@ -648,6 +681,7 @@ window.addEventListener('touchend', function(event) {
 });
 
 // --- GLOBAL EXPORTS ---
+window.toggleDarkMode = toggleDarkMode;
 window.handleLogin = handleLogin;
 window.handleLogout = handleLogout;
 window.togglePasswordVisibility = togglePasswordVisibility;
